@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline de sinais e aportes</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Timeline de sinais e aportes</div>
+  <div class="table-subtitle">Linha do tempo dos sinais e aportes.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Estratégia</th><th data-col='1'>Estratégia de referência</th><th data-col='2'>Grupo</th><th data-col='3'>Grupo (2)</th><th data-col='4'>Data do sinal</th><th data-col='5'>Data do aporte</th><th data-col='6'>Ano</th><th data-col='7'>Ano-mês</th><th data-col='8'>Score intensidade sinal</th><th data-col='9'>Percentil intensidade sinal</th><th data-col='10'>Classe intensidade sinal</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-01-27</td><td>2014-01-28</td><td>2014</td><td>2014-01</td><td>1,4844</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-01-27</td><td>2014-01-28</td><td>2014</td><td>2014-01</td><td>1,4844</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-01-27</td><td>2014-01-28</td><td>2014</td><td>2014-01</td><td>1,4844</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-01-27</td><td>2014-01-28</td><td>2014</td><td>2014-01</td><td>1,4844</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-01-27</td><td></td><td>2014</td><td>2014-01</td><td>1,4844</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-06-09</td><td>2014-06-10</td><td>2014</td><td>2014-06</td><td>0,6934</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-06-09</td><td>2014-06-10</td><td>2014</td><td>2014-06</td><td>0,6934</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-06-09</td><td>2014-06-10</td><td>2014</td><td>2014-06</td><td>0,6934</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-06-09</td><td>2014-06-10</td><td>2014</td><td>2014-06</td><td>0,6934</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-06-09</td><td></td><td>2014</td><td>2014-06</td><td>0,6934</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-09-22</td><td>2014-09-23</td><td>2014</td><td>2014-09</td><td>0,3030</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-09-22</td><td>2014-09-23</td><td>2014</td><td>2014-09</td><td>0,3030</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-09-22</td><td>2014-09-23</td><td>2014</td><td>2014-09</td><td>0,3030</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-09-22</td><td>2014-09-23</td><td>2014</td><td>2014-09</td><td>0,3030</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-09-22</td><td></td><td>2014</td><td>2014-09</td><td>0,3030</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-12-19</td><td>2014-12-22</td><td>2014</td><td>2014-12</td><td>0,8727</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-12-19</td><td>2014-12-22</td><td>2014</td><td>2014-12</td><td>0,8727</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-12-19</td><td>2014-12-22</td><td>2014</td><td>2014-12</td><td>0,8727</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-12-19</td><td>2014-12-22</td><td>2014</td><td>2014-12</td><td>0,8727</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2014-12-19</td><td></td><td>2014</td><td>2014-12</td><td>0,8727</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-03-27</td><td>2015-03-30</td><td>2015</td><td>2015-03</td><td>0,9767</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-03-27</td><td>2015-03-30</td><td>2015</td><td>2015-03</td><td>0,9767</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-03-27</td><td>2015-03-30</td><td>2015</td><td>2015-03</td><td>0,9767</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-03-27</td><td>2015-03-30</td><td>2015</td><td>2015-03</td><td>0,9767</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-03-27</td><td></td><td>2015</td><td>2015-03</td><td>0,9767</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-04-06</td><td>2015-04-07</td><td>2015</td><td>2015-04</td><td>0,2655</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-04-06</td><td>2015-04-07</td><td>2015</td><td>2015-04</td><td>0,2655</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-04-06</td><td>2015-04-07</td><td>2015</td><td>2015-04</td><td>0,2655</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-04-06</td><td>2015-04-07</td><td>2015</td><td>2015-04</td><td>0,2655</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-04-06</td><td></td><td>2015</td><td>2015-04</td><td>0,2655</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-07-27</td><td>2015-07-28</td><td>2015</td><td>2015-07</td><td>1,2017</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-07-27</td><td>2015-07-28</td><td>2015</td><td>2015-07</td><td>1,2017</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-07-27</td><td>2015-07-28</td><td>2015</td><td>2015-07</td><td>1,2017</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-07-27</td><td>2015-07-28</td><td>2015</td><td>2015-07</td><td>1,2017</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-07-27</td><td></td><td>2015</td><td>2015-07</td><td>1,2017</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-12-01</td><td>2015-12-02</td><td>2015</td><td>2015-12</td><td>1,3767</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-12-01</td><td>2015-12-02</td><td>2015</td><td>2015-12</td><td>1,3767</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-12-01</td><td>2015-12-02</td><td>2015</td><td>2015-12</td><td>1,3767</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-12-01</td><td>2015-12-02</td><td>2015</td><td>2015-12</td><td>1,3767</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2015-12-01</td><td></td><td>2015</td><td>2015-12</td><td>1,3767</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-03-21</td><td>2016-03-22</td><td>2016</td><td>2016-03</td><td>0,6818</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-03-21</td><td>2016-03-22</td><td>2016</td><td>2016-03</td><td>0,6818</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-03-21</td><td>2016-03-22</td><td>2016</td><td>2016-03</td><td>0,6818</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-03-21</td><td>2016-03-22</td><td>2016</td><td>2016-03</td><td>0,6818</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-03-21</td><td></td><td>2016</td><td>2016-03</td><td>0,6818</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-06-21</td><td>2016-06-22</td><td>2016</td><td>2016-06</td><td>0,5942</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-06-21</td><td>2016-06-22</td><td>2016</td><td>2016-06</td><td>0,5942</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-06-21</td><td>2016-06-22</td><td>2016</td><td>2016-06</td><td>0,5942</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-06-21</td><td>2016-06-22</td><td>2016</td><td>2016-06</td><td>0,5942</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-06-21</td><td></td><td>2016</td><td>2016-06</td><td>0,5942</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-09-19</td><td>2016-09-20</td><td>2016</td><td>2016-09</td><td>0,9049</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-09-19</td><td>2016-09-20</td><td>2016</td><td>2016-09</td><td>0,9049</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-09-19</td><td>2016-09-20</td><td>2016</td><td>2016-09</td><td>0,9049</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-09-19</td><td>2016-09-20</td><td>2016</td><td>2016-09</td><td>0,9049</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2016-09-19</td><td></td><td>2016</td><td>2016-09</td><td>0,9049</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-01-03</td><td>2017-01-04</td><td>2017</td><td>2017-01</td><td>0,6346</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-01-03</td><td>2017-01-04</td><td>2017</td><td>2017-01</td><td>0,6346</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-01-03</td><td>2017-01-04</td><td>2017</td><td>2017-01</td><td>0,6346</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-01-03</td><td>2017-01-04</td><td>2017</td><td>2017-01</td><td>0,6346</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-01-03</td><td></td><td>2017</td><td>2017-01</td><td>0,6346</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-04-05</td><td>2017-04-06</td><td>2017</td><td>2017-04</td><td>0,6314</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-04-05</td><td>2017-04-06</td><td>2017</td><td>2017-04</td><td>0,6314</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-04-05</td><td>2017-04-06</td><td>2017</td><td>2017-04</td><td>0,6314</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-04-05</td><td>2017-04-06</td><td>2017</td><td>2017-04</td><td>0,6314</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-04-05</td><td></td><td>2017</td><td>2017-04</td><td>0,6314</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-07-17</td><td>2017-07-18</td><td>2017</td><td>2017-07</td><td>1,0467</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-07-17</td><td>2017-07-18</td><td>2017</td><td>2017-07</td><td>1,0467</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-07-17</td><td>2017-07-18</td><td>2017</td><td>2017-07</td><td>1,0467</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-07-17</td><td>2017-07-18</td><td>2017</td><td>2017-07</td><td>1,0467</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-07-17</td><td></td><td>2017</td><td>2017-07</td><td>1,0467</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-10-16</td><td>2017-10-17</td><td>2017</td><td>2017-10</td><td>1,2428</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-10-16</td><td>2017-10-17</td><td>2017</td><td>2017-10</td><td>1,2428</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-10-16</td><td>2017-10-17</td><td>2017</td><td>2017-10</td><td>1,2428</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-10-16</td><td>2017-10-17</td><td>2017</td><td>2017-10</td><td>1,2428</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2017-10-16</td><td></td><td>2017</td><td>2017-10</td><td>1,2428</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-01-19</td><td>2018-01-22</td><td>2018</td><td>2018-01</td><td>1,0271</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-01-19</td><td>2018-01-22</td><td>2018</td><td>2018-01</td><td>1,0271</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-01-19</td><td>2018-01-22</td><td>2018</td><td>2018-01</td><td>1,0271</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-01-19</td><td>2018-01-22</td><td>2018</td><td>2018-01</td><td>1,0271</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-01-19</td><td></td><td>2018</td><td>2018-01</td><td>1,0271</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-05-17</td><td>2018-05-18</td><td>2018</td><td>2018-05</td><td>0,9242</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-05-17</td><td>2018-05-18</td><td>2018</td><td>2018-05</td><td>0,9242</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-05-17</td><td>2018-05-18</td><td>2018</td><td>2018-05</td><td>0,9242</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-05-17</td><td>2018-05-18</td><td>2018</td><td>2018-05</td><td>0,9242</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-05-17</td><td></td><td>2018</td><td>2018-05</td><td>0,9242</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-08-16</td><td>2018-08-17</td><td>2018</td><td>2018-08</td><td>0,6203</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-08-16</td><td>2018-08-17</td><td>2018</td><td>2018-08</td><td>0,6203</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-08-16</td><td>2018-08-17</td><td>2018</td><td>2018-08</td><td>0,6203</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-08-16</td><td>2018-08-17</td><td>2018</td><td>2018-08</td><td>0,6203</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-08-16</td><td></td><td>2018</td><td>2018-08</td><td>0,6203</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-12-28</td><td>2019-01-02</td><td>2018</td><td>2018-12</td><td>1,2009</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-12-28</td><td>2019-01-02</td><td>2018</td><td>2018-12</td><td>1,2009</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-12-28</td><td>2019-01-02</td><td>2018</td><td>2018-12</td><td>1,2009</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-12-28</td><td>2019-01-02</td><td>2018</td><td>2018-12</td><td>1,2009</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2018-12-28</td><td></td><td>2018</td><td>2018-12</td><td>1,2009</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-04-08</td><td>2019-04-09</td><td>2019</td><td>2019-04</td><td>0,9428</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-04-08</td><td>2019-04-09</td><td>2019</td><td>2019-04</td><td>0,9428</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-04-08</td><td>2019-04-09</td><td>2019</td><td>2019-04</td><td>0,9428</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-04-08</td><td>2019-04-09</td><td>2019</td><td>2019-04</td><td>0,9428</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-04-08</td><td></td><td>2019</td><td>2019-04</td><td>0,9428</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-07-10</td><td>2019-07-11</td><td>2019</td><td>2019-07</td><td>2,5464</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-07-10</td><td>2019-07-11</td><td>2019</td><td>2019-07</td><td>2,5464</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-07-10</td><td>2019-07-11</td><td>2019</td><td>2019-07</td><td>2,5464</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-07-10</td><td>2019-07-11</td><td>2019</td><td>2019-07</td><td>2,5464</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-07-10</td><td></td><td>2019</td><td>2019-07</td><td>2,5464</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-08-26</td><td>2019-08-27</td><td>2019</td><td>2019-08</td><td>0,1756</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-08-26</td><td>2019-08-27</td><td>2019</td><td>2019-08</td><td>0,1756</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-08-26</td><td>2019-08-27</td><td>2019</td><td>2019-08</td><td>0,1756</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-08-26</td><td>2019-08-27</td><td>2019</td><td>2019-08</td><td>0,1756</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-08-26</td><td></td><td>2019</td><td>2019-08</td><td>0,1756</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-10-14</td><td>2019-10-15</td><td>2019</td><td>2019-10</td><td>0,9335</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-10-14</td><td>2019-10-15</td><td>2019</td><td>2019-10</td><td>0,9335</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-10-14</td><td>2019-10-15</td><td>2019</td><td>2019-10</td><td>0,9335</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-10-14</td><td>2019-10-15</td><td>2019</td><td>2019-10</td><td>0,9335</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2019-10-14</td><td></td><td>2019</td><td>2019-10</td><td>0,9335</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-01-17</td><td>2020-01-20</td><td>2020</td><td>2020-01</td><td>2,5400</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-01-17</td><td>2020-01-20</td><td>2020</td><td>2020-01</td><td>2,5400</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-01-17</td><td>2020-01-20</td><td>2020</td><td>2020-01</td><td>2,5400</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-01-17</td><td>2020-01-20</td><td>2020</td><td>2020-01</td><td>2,5400</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-01-17</td><td></td><td>2020</td><td>2020-01</td><td>2,5400</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-03-06</td><td>2020-03-09</td><td>2020</td><td>2020-03</td><td>0,5359</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-03-06</td><td>2020-03-09</td><td>2020</td><td>2020-03</td><td>0,5359</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-03-06</td><td>2020-03-09</td><td>2020</td><td>2020-03</td><td>0,5359</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-03-06</td><td>2020-03-09</td><td>2020</td><td>2020-03</td><td>0,5359</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-03-06</td><td></td><td>2020</td><td>2020-03</td><td>0,5359</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-06-16</td><td>2020-06-17</td><td>2020</td><td>2020-06</td><td>0,5314</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-06-16</td><td>2020-06-17</td><td>2020</td><td>2020-06</td><td>0,5314</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-06-16</td><td>2020-06-17</td><td>2020</td><td>2020-06</td><td>0,5314</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-06-16</td><td>2020-06-17</td><td>2020</td><td>2020-06</td><td>0,5314</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-06-16</td><td></td><td>2020</td><td>2020-06</td><td>0,5314</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-09-28</td><td>2020-09-29</td><td>2020</td><td>2020-09</td><td>0,5584</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-09-28</td><td>2020-09-29</td><td>2020</td><td>2020-09</td><td>0,5584</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-09-28</td><td>2020-09-29</td><td>2020</td><td>2020-09</td><td>0,5584</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-09-28</td><td>2020-09-29</td><td>2020</td><td>2020-09</td><td>0,5584</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-09-28</td><td></td><td>2020</td><td>2020-09</td><td>0,5584</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-12-02</td><td>2020-12-03</td><td>2020</td><td>2020-12</td><td>0,6371</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-12-02</td><td>2020-12-03</td><td>2020</td><td>2020-12</td><td>0,6371</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-12-02</td><td>2020-12-03</td><td>2020</td><td>2020-12</td><td>0,6371</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-12-02</td><td>2020-12-03</td><td>2020</td><td>2020-12</td><td>0,6371</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2020-12-02</td><td></td><td>2020</td><td>2020-12</td><td>0,6371</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-04-19</td><td>2021-04-20</td><td>2021</td><td>2021-04</td><td>0,8646</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-04-19</td><td>2021-04-20</td><td>2021</td><td>2021-04</td><td>0,8646</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-04-19</td><td>2021-04-20</td><td>2021</td><td>2021-04</td><td>0,8646</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-04-19</td><td>2021-04-20</td><td>2021</td><td>2021-04</td><td>0,8646</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-04-19</td><td></td><td>2021</td><td>2021-04</td><td>0,8646</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-08-11</td><td>2021-08-12</td><td>2021</td><td>2021-08</td><td>0,4272</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-08-11</td><td>2021-08-12</td><td>2021</td><td>2021-08</td><td>0,4272</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-08-11</td><td>2021-08-12</td><td>2021</td><td>2021-08</td><td>0,4272</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-08-11</td><td>2021-08-12</td><td>2021</td><td>2021-08</td><td>0,4272</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-08-11</td><td></td><td>2021</td><td>2021-08</td><td>0,4272</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-11-11</td><td>2021-11-12</td><td>2021</td><td>2021-11</td><td>0,6711</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-11-11</td><td>2021-11-12</td><td>2021</td><td>2021-11</td><td>0,6711</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-11-11</td><td>2021-11-12</td><td>2021</td><td>2021-11</td><td>0,6711</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-11-11</td><td>2021-11-12</td><td>2021</td><td>2021-11</td><td>0,6711</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2021-11-11</td><td></td><td>2021</td><td>2021-11</td><td>0,6711</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-02-11</td><td>2022-02-14</td><td>2022</td><td>2022-02</td><td>0,7831</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-02-11</td><td>2022-02-14</td><td>2022</td><td>2022-02</td><td>0,7831</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-02-11</td><td>2022-02-14</td><td>2022</td><td>2022-02</td><td>0,7831</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-02-11</td><td>2022-02-14</td><td>2022</td><td>2022-02</td><td>0,7831</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-02-11</td><td></td><td>2022</td><td>2022-02</td><td>0,7831</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-06-06</td><td>2022-06-07</td><td>2022</td><td>2022-06</td><td>1,0987</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-06-06</td><td>2022-06-07</td><td>2022</td><td>2022-06</td><td>1,0987</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-06-06</td><td>2022-06-07</td><td>2022</td><td>2022-06</td><td>1,0987</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-06-06</td><td>2022-06-07</td><td>2022</td><td>2022-06</td><td>1,0987</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-06-06</td><td></td><td>2022</td><td>2022-06</td><td>1,0987</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-09-29</td><td>2022-09-30</td><td>2022</td><td>2022-09</td><td>0,8144</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-09-29</td><td>2022-09-30</td><td>2022</td><td>2022-09</td><td>0,8144</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-09-29</td><td>2022-09-30</td><td>2022</td><td>2022-09</td><td>0,8144</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-09-29</td><td>2022-09-30</td><td>2022</td><td>2022-09</td><td>0,8144</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-09-29</td><td></td><td>2022</td><td>2022-09</td><td>0,8144</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-11-04</td><td>2022-11-07</td><td>2022</td><td>2022-11</td><td>0,8202</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-11-04</td><td>2022-11-07</td><td>2022</td><td>2022-11</td><td>0,8202</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-11-04</td><td>2022-11-07</td><td>2022</td><td>2022-11</td><td>0,8202</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-11-04</td><td>2022-11-07</td><td>2022</td><td>2022-11</td><td>0,8202</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2022-11-04</td><td></td><td>2022</td><td>2022-11</td><td>0,8202</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-01-02</td><td>2023-01-03</td><td>2023</td><td>2023-01</td><td>0,8521</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-01-02</td><td>2023-01-03</td><td>2023</td><td>2023-01</td><td>0,8521</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-01-02</td><td>2023-01-03</td><td>2023</td><td>2023-01</td><td>0,8521</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-01-02</td><td>2023-01-03</td><td>2023</td><td>2023-01</td><td>0,8521</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-01-02</td><td></td><td>2023</td><td>2023-01</td><td>0,8521</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-04-05</td><td>2023-04-06</td><td>2023</td><td>2023-04</td><td>1,1723</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-04-05</td><td>2023-04-06</td><td>2023</td><td>2023-04</td><td>1,1723</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-04-05</td><td>2023-04-06</td><td>2023</td><td>2023-04</td><td>1,1723</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-04-05</td><td>2023-04-06</td><td>2023</td><td>2023-04</td><td>1,1723</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-04-05</td><td></td><td>2023</td><td>2023-04</td><td>1,1723</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-06-06</td><td>2023-06-07</td><td>2023</td><td>2023-06</td><td>1,0272</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-06-06</td><td>2023-06-07</td><td>2023</td><td>2023-06</td><td>1,0272</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-06-06</td><td>2023-06-07</td><td>2023</td><td>2023-06</td><td>1,0272</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-06-06</td><td>2023-06-07</td><td>2023</td><td>2023-06</td><td>1,0272</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-06-06</td><td></td><td>2023</td><td>2023-06</td><td>1,0272</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-09-22</td><td>2023-09-25</td><td>2023</td><td>2023-09</td><td>0,2338</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-09-22</td><td>2023-09-25</td><td>2023</td><td>2023-09</td><td>0,2338</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-09-22</td><td>2023-09-25</td><td>2023</td><td>2023-09</td><td>0,2338</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-09-22</td><td>2023-09-25</td><td>2023</td><td>2023-09</td><td>0,2338</td><td>1</td><td>moderada</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-09-22</td><td></td><td>2023</td><td>2023-09</td><td>0,2338</td><td>1</td><td>moderada</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-11-16</td><td>2023-11-17</td><td>2023</td><td>2023-11</td><td>0,8595</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-11-16</td><td>2023-11-17</td><td>2023</td><td>2023-11</td><td>0,8595</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-11-16</td><td>2023-11-17</td><td>2023</td><td>2023-11</td><td>0,8595</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-11-16</td><td>2023-11-17</td><td>2023</td><td>2023-11</td><td>0,8595</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2023-11-16</td><td></td><td>2023</td><td>2023-11</td><td>0,8595</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-04-15</td><td>2024-04-16</td><td>2024</td><td>2024-04</td><td>0,8758</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-04-15</td><td>2024-04-16</td><td>2024</td><td>2024-04</td><td>0,8758</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-04-15</td><td>2024-04-16</td><td>2024</td><td>2024-04</td><td>0,8758</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-04-15</td><td>2024-04-16</td><td>2024</td><td>2024-04</td><td>0,8758</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-04-15</td><td></td><td>2024</td><td>2024-04</td><td>0,8758</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-10-09</td><td>2024-10-10</td><td>2024</td><td>2024-10</td><td>1,0018</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-10-09</td><td>2024-10-10</td><td>2024</td><td>2024-10</td><td>1,0018</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-10-09</td><td>2024-10-10</td><td>2024</td><td>2024-10</td><td>1,0018</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-10-09</td><td>2024-10-10</td><td>2024</td><td>2024-10</td><td>1,0018</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2024-10-09</td><td></td><td>2024</td><td>2024-10</td><td>1,0018</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-01-23</td><td>2025-01-24</td><td>2025</td><td>2025-01</td><td>0,9266</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-01-23</td><td>2025-01-24</td><td>2025</td><td>2025-01</td><td>0,9266</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-01-23</td><td>2025-01-24</td><td>2025</td><td>2025-01</td><td>0,9266</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-01-23</td><td>2025-01-24</td><td>2025</td><td>2025-01</td><td>0,9266</td><td>1</td><td>alta</td></tr>
+<tr><td>Capitulação</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-01-23</td><td></td><td>2025</td><td>2025-01</td><td>0,9266</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-05-13</td><td>2025-05-14</td><td>2025</td><td>2025-05</td><td>0,8340</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-05-13</td><td>2025-05-14</td><td>2025</td><td>2025-05</td><td>0,8340</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-05-13</td><td>2025-05-14</td><td>2025</td><td>2025-05</td><td>0,8340</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-05-13</td><td>2025-05-14</td><td>2025</td><td>2025-05</td><td>0,8340</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-05-13</td><td></td><td>2025</td><td>2025-05</td><td>0,8340</td><td>1</td><td>alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-08-28</td><td>2025-08-29</td><td>2025</td><td>2025-08</td><td>1,2733</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-08-28</td><td>2025-08-29</td><td>2025</td><td>2025-08</td><td>1,2733</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-08-28</td><td>2025-08-29</td><td>2025</td><td>2025-08</td><td>1,2733</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-08-28</td><td>2025-08-29</td><td>2025</td><td>2025-08</td><td>1,2733</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-08-28</td><td></td><td>2025</td><td>2025-08</td><td>1,2733</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-11-26</td><td>2025-11-27</td><td>2025</td><td>2025-11</td><td>1,5206</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-11-26</td><td>2025-11-27</td><td>2025</td><td>2025-11</td><td>1,5206</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-11-26</td><td>2025-11-27</td><td>2025</td><td>2025-11</td><td>1,5206</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-11-26</td><td>2025-11-27</td><td>2025</td><td>2025-11</td><td>1,5206</td><td>1</td><td>muito_alta</td></tr>
+<tr><td>Euforia</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>2025-11-26</td><td></td><td>2025</td><td>2025-11</td><td>1,5206</td><td>1</td><td>muito_alta</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

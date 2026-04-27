@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capitulação vs Euforia — testes formais</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Capitulação vs Euforia — testes formais</div>
+  <div class="table-subtitle">Testes formais e evidência estatística da comparação direta.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Estratégia de referência</th><th data-col='2'>Tipo comparacao</th><th data-col='3'>Grupo comparacao</th><th data-col='4'>N empates</th><th data-col='5'>Media excesso periodico</th><th data-col='6'>p-valor teste de sinal</th><th data-col='7'>p-valor Wilcoxon</th><th data-col='8'>p-valor permutação</th><th data-col='9'>Estatistica wilcoxon</th><th data-col='10'>N observacoes teste</th><th data-col='11'>N vitorias capitulacao</th><th data-col='12'>N vitorias euforia</th><th data-col='13'>Pct capitulacao superou euforia teste</th><th data-col='14'>Direcao economica</th><th data-col='15'>P valor holm teste sinal</th><th data-col='16'>Status teste sinal</th><th data-col='17'>P valor holm wilcoxon</th><th data-col='18'>Estatistica observada media</th><th data-col='19'>N permutacoes</th><th data-col='20'>N testes significativos 5pct</th><th data-col='21'>Classificacao evidencia capitulacao vs euforia</th><th data-col='22'>Interpretacao direcional</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Diária</td><td>Capitulação</td><td>capitulacao_vs_euforia</td><td>comparacao direta</td><td>640</td><td>-0,00%</td><td>0,5564</td><td>0,2654</td><td>0,9700</td><td>2.137.903,00</td><td>2.959</td><td>1.463</td><td>1.496</td><td>49,44%</td><td>direcao_euforia</td><td>1,0000</td><td>calculado</td><td>0,7963</td><td>-0,0000</td><td>2.000</td><td>0,0000</td><td>favoravel_economica_euforia_sem_significancia</td><td>excesso_medio_ou_frequencia_favorece_euforia</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>capitulacao_vs_euforia</td><td>comparacao direta</td><td>31</td><td>-0,00%</td><td>0,5598</td><td>0,5325</td><td>0,9755</td><td>4.907,00</td><td>144</td><td>68</td><td>76</td><td>47,22%</td><td>direcao_euforia</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>-0,0000</td><td>2.000</td><td>0,0000</td><td>favoravel_economica_euforia_sem_significancia</td><td>excesso_medio_ou_frequencia_favorece_euforia</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>capitulacao_vs_euforia</td><td>comparacao direta</td><td>3</td><td>0,02%</td><td>0,7744</td><td>0,6772</td><td>0,9635</td><td>33,00</td><td>12</td><td>7</td><td>5</td><td>58,33%</td><td>direcao_mista_ou_neutra</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>0,0003</td><td>2.000</td><td>0,0000</td><td>neutra_ou_mista_sem_significancia</td><td>resultado_misto_ou_neutro</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

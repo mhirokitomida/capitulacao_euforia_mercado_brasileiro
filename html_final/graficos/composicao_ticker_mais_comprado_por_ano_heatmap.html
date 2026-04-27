@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticker mais comprado por ano</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 14px; }
+
+    .chart-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .chart-subtitle {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(210px, 1fr));
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: #334155;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    select,
+    .multi-button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 0.92rem;
+      text-align: left;
+    }
+
+    .multi-wrap { position: relative; }
+
+    .multi-button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .multi-panel {
+      position: absolute;
+      z-index: 50;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 320px;
+      overflow: auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+      padding: 10px;
+      display: none;
+    }
+
+    .multi-panel.open { display: block; }
+
+    .multi-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .multi-actions button {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 7px 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .multi-option {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 4px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .chart-wrap {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+    }
+
+    #chart {
+      width: 100%;
+      min-height: 680px;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      display: none;
+    }
+
+    @media (max-width: 1050px) {
+      .controls { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .controls { grid-template-columns: 1fr; }
+      #chart { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-title">Ticker mais comprado por ano</div>
+  <div class="chart-subtitle">Heatmap ano × estratégia. O texto da célula mostra o ticker líder, valor investido e número de compras/aportes.</div>
+
+  <div class="controls">
+    <div class="control-group" id="metricControl">
+      <label>Métrica</label>
+      <select id="metricSelect"></select>
+    </div>
+    <div class="control-group" id="categoryControl">
+      <label>Categoria</label>
+      <div id="categoryMulti" class="multi-wrap"></div>
+    </div>
+    <div class="control-group" id="strategyControl">
+      <label>Estratégias</label>
+      <div id="strategyMulti" class="multi-wrap"></div>
+    </div>
+    <div class="control-group" id="topNControl">
+      <label>Top N colunas</label>
+      <select id="topNSelect">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="30" selected>30</option>
+        <option value="40">40</option>
+        <option value="60">60</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div id="chart"></div>
+    <div id="emptyState" class="empty">Nenhum dado disponível para os filtros selecionados.</div>
+  </div>
+
+  <script>
+    const CONFIG = {"title": "Ticker mais comprado por ano", "subtitle": "Heatmap ano × estratégia. O texto da célula mostra o ticker líder, valor investido e número de compras/aportes.", "metrics": [{"field": "valor_investido", "label": "Valor investido"}, {"field": "n_compras", "label": "N compras/aportes"}], "initialMetric": "valor_investido", "categories": ["Aleatórias", "Capitulação", "Euforia"], "strategies": ["Aleatória da Capitulação #1", "Aleatória da Capitulação #2", "Aleatória da Capitulação #3", "Aleatória da Capitulação #4", "Aleatória da Capitulação #5", "Aleatória da Euforia #1", "Aleatória da Euforia #2", "Aleatória da Euforia #3", "Aleatória da Euforia #4", "Aleatória da Euforia #5", "Capitulação", "Euforia"], "topN": 99, "xSort": "numeric", "xTitle": "Ano", "yTitle": "Estratégia", "data": [{"x": "2014", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 436.7156, "n_compras": 2.0, "text": "APER3<br>R$ 437<br>n=2", "hover": "Ano: 2014<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: APER3<br>Valor investido: R$ 436,72<br>N compras/aportes: 2"}, {"x": "2014", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 295.9744, "n_compras": 2.0, "text": "APER3<br>R$ 296<br>n=2", "hover": "Ano: 2014<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: APER3<br>Valor investido: R$ 295,97<br>N compras/aportes: 2"}, {"x": "2014", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 211.7346, "n_compras": 1.0, "text": "APER3<br>R$ 212<br>n=1", "hover": "Ano: 2014<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: APER3<br>Valor investido: R$ 211,73<br>N compras/aportes: 1"}, {"x": "2014", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 566.3412000000001, "n_compras": 3.0, "text": "APER3<br>R$ 566<br>n=3", "hover": "Ano: 2014<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: APER3<br>Valor investido: R$ 566,34<br>N compras/aportes: 3"}, {"x": "2014", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 285.64, "n_compras": 3.0, "text": "PCAR4<br>R$ 286<br>n=3", "hover": "Ano: 2014<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: PCAR4<br>Valor investido: R$ 285,64<br>N compras/aportes: 3"}, {"x": "2014", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 178.1843, "n_compras": 1.0, "text": "APER3<br>R$ 178<br>n=1", "hover": "Ano: 2014<br>Estratégia: Aleatória da Euforia #1<br>Ticker: APER3<br>Valor investido: R$ 178,18<br>N compras/aportes: 1"}, {"x": "2014", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 186.6617, "n_compras": 1.0, "text": "APER3<br>R$ 187<br>n=1", "hover": "Ano: 2014<br>Estratégia: Aleatória da Euforia #2<br>Ticker: APER3<br>Valor investido: R$ 186,66<br>N compras/aportes: 1"}, {"x": "2014", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 110.0618, "n_compras": 2.0, "text": "BRFS3<br>R$ 110<br>n=2", "hover": "Ano: 2014<br>Estratégia: Aleatória da Euforia #3<br>Ticker: BRFS3<br>Valor investido: R$ 110,06<br>N compras/aportes: 2"}, {"x": "2014", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 103.2578, "n_compras": 2.0, "text": "BRFS3<br>R$ 103<br>n=2", "hover": "Ano: 2014<br>Estratégia: Aleatória da Euforia #4<br>Ticker: BRFS3<br>Valor investido: R$ 103,26<br>N compras/aportes: 2"}, {"x": "2014", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 103.24, "n_compras": 1.0, "text": "PCAR4<br>R$ 103<br>n=1", "hover": "Ano: 2014<br>Estratégia: Aleatória da Euforia #5<br>Ticker: PCAR4<br>Valor investido: R$ 103,24<br>N compras/aportes: 1"}, {"x": "2014", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 291.90999999999997, "n_compras": 3.0, "text": "PCAR4<br>R$ 292<br>n=3", "hover": "Ano: 2014<br>Estratégia: Capitulação<br>Ticker: PCAR4<br>Valor investido: R$ 291,91<br>N compras/aportes: 3"}, {"x": "2014", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 159.8179, "n_compras": 1.0, "text": "APER3<br>R$ 160<br>n=1", "hover": "Ano: 2014<br>Estratégia: Euforia<br>Ticker: APER3<br>Valor investido: R$ 159,82<br>N compras/aportes: 1"}, {"x": "2015", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 212.18880000000001, "n_compras": 4.0, "text": "BRFS3<br>R$ 212<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: BRFS3<br>Valor investido: R$ 212,19<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 229.6664, "n_compras": 4.0, "text": "BRFS3<br>R$ 230<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: BRFS3<br>Valor investido: R$ 229,67<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 229.6134, "n_compras": 4.0, "text": "BRFS3<br>R$ 230<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: BRFS3<br>Valor investido: R$ 229,61<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 225.8314, "n_compras": 4.0, "text": "BRFS3<br>R$ 226<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: BRFS3<br>Valor investido: R$ 225,83<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 212.96620000000001, "n_compras": 4.0, "text": "BRFS3<br>R$ 213<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: BRFS3<br>Valor investido: R$ 212,97<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 231.5926, "n_compras": 4.0, "text": "BRFS3<br>R$ 232<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Euforia #1<br>Ticker: BRFS3<br>Valor investido: R$ 231,59<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 204.3068, "n_compras": 4.0, "text": "BRFS3<br>R$ 204<br>n=4", "hover": "Ano: 2015<br>Estratégia: Aleatória da Euforia #2<br>Ticker: BRFS3<br>Valor investido: R$ 204,31<br>N compras/aportes: 4"}, {"x": "2015", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 325.9618, "n_compras": 6.0, "text": "BRFS3<br>R$ 326<br>n=6", "hover": "Ano: 2015<br>Estratégia: Aleatória da Euforia #3<br>Ticker: BRFS3<br>Valor investido: R$ 325,96<br>N compras/aportes: 6"}, {"x": "2015", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 124.3056, "n_compras": 2.0, "text": "BRFS3<br>R$ 124<br>n=2", "hover": "Ano: 2015<br>Estratégia: Aleatória da Euforia #4<br>Ticker: BRFS3<br>Valor investido: R$ 124,31<br>N compras/aportes: 2"}, {"x": "2015", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 338.0138, "n_compras": 6.0, "text": "BRFS3<br>R$ 338<br>n=6", "hover": "Ano: 2015<br>Estratégia: Aleatória da Euforia #5<br>Ticker: BRFS3<br>Valor investido: R$ 338,01<br>N compras/aportes: 6"}, {"x": "2015", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 322.5156, "n_compras": 6.0, "text": "BRFS3<br>R$ 323<br>n=6", "hover": "Ano: 2015<br>Estratégia: Capitulação<br>Ticker: BRFS3<br>Valor investido: R$ 322,52<br>N compras/aportes: 6"}, {"x": "2015", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 167.1218, "n_compras": 1.0, "text": "SLED4<br>R$ 167<br>n=1", "hover": "Ano: 2015<br>Estratégia: Euforia<br>Ticker: SLED4<br>Valor investido: R$ 167,12<br>N compras/aportes: 1"}, {"x": "2016", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 224.54999999999998, "n_compras": 8.0, "text": "MPLU3<br>R$ 225<br>n=8", "hover": "Ano: 2016<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: MPLU3<br>Valor investido: R$ 224,55<br>N compras/aportes: 8"}, {"x": "2016", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 258.4275, "n_compras": 6.0, "text": "BRFS3<br>R$ 258<br>n=6", "hover": "Ano: 2016<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: BRFS3<br>Valor investido: R$ 258,43<br>N compras/aportes: 6"}, {"x": "2016", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 131.91, "n_compras": 3.0, "text": "SMLE3<br>R$ 132<br>n=3", "hover": "Ano: 2016<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: SMLE3<br>Valor investido: R$ 131,91<br>N compras/aportes: 3"}, {"x": "2016", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 210.56, "n_compras": 8.0, "text": "MPLU3<br>R$ 211<br>n=8", "hover": "Ano: 2016<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: MPLU3<br>Valor investido: R$ 210,56<br>N compras/aportes: 8"}, {"x": "2016", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 272.25, "n_compras": 6.0, "text": "SMLE3<br>R$ 272<br>n=6", "hover": "Ano: 2016<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: SMLE3<br>Valor investido: R$ 272,25<br>N compras/aportes: 6"}, {"x": "2016", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 226.32, "n_compras": 8.0, "text": "MPLU3<br>R$ 226<br>n=8", "hover": "Ano: 2016<br>Estratégia: Aleatória da Euforia #1<br>Ticker: MPLU3<br>Valor investido: R$ 226,32<br>N compras/aportes: 8"}, {"x": "2016", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 227.95999999999998, "n_compras": 5.0, "text": "SMLE3<br>R$ 228<br>n=5", "hover": "Ano: 2016<br>Estratégia: Aleatória da Euforia #2<br>Ticker: SMLE3<br>Valor investido: R$ 227,96<br>N compras/aportes: 5"}, {"x": "2016", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 245.23999999999998, "n_compras": 7.0, "text": "SMLE3<br>R$ 245<br>n=7", "hover": "Ano: 2016<br>Estratégia: Aleatória da Euforia #3<br>Ticker: SMLE3<br>Valor investido: R$ 245,24<br>N compras/aportes: 7"}, {"x": "2016", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 340.12, "n_compras": 10.0, "text": "SMLE3<br>R$ 340<br>n=10", "hover": "Ano: 2016<br>Estratégia: Aleatória da Euforia #4<br>Ticker: SMLE3<br>Valor investido: R$ 340,12<br>N compras/aportes: 10"}, {"x": "2016", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 347.2, "n_compras": 10.0, "text": "SMLE3<br>R$ 347<br>n=10", "hover": "Ano: 2016<br>Estratégia: Aleatória da Euforia #5<br>Ticker: SMLE3<br>Valor investido: R$ 347,20<br>N compras/aportes: 10"}, {"x": "2016", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 331.01, "n_compras": 11.0, "text": "MPLU3<br>R$ 331<br>n=11", "hover": "Ano: 2016<br>Estratégia: Euforia<br>Ticker: MPLU3<br>Valor investido: R$ 331,01<br>N compras/aportes: 11"}, {"x": "2017", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 350.9604, "n_compras": 9.0, "text": "MDIA3<br>R$ 351<br>n=9", "hover": "Ano: 2017<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: MDIA3<br>Valor investido: R$ 350,96<br>N compras/aportes: 9"}, {"x": "2017", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 332.18, "n_compras": 10.0, "text": "MPLU3<br>R$ 332<br>n=10", "hover": "Ano: 2017<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: MPLU3<br>Valor investido: R$ 332,18<br>N compras/aportes: 10"}, {"x": "2017", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 329.23, "n_compras": 10.0, "text": "MPLU3<br>R$ 329<br>n=10", "hover": "Ano: 2017<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: MPLU3<br>Valor investido: R$ 329,23<br>N compras/aportes: 10"}, {"x": "2017", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 314.25, "n_compras": 9.0, "text": "MPLU3<br>R$ 314<br>n=9", "hover": "Ano: 2017<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: MPLU3<br>Valor investido: R$ 314,25<br>N compras/aportes: 9"}, {"x": "2017", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 219.1726, "n_compras": 10.0, "text": "HYPE3<br>R$ 219<br>n=10", "hover": "Ano: 2017<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: HYPE3<br>Valor investido: R$ 219,17<br>N compras/aportes: 10"}, {"x": "2017", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 233.8057, "n_compras": 7.0, "text": "IGTA3<br>R$ 234<br>n=7", "hover": "Ano: 2017<br>Estratégia: Aleatória da Euforia #1<br>Ticker: IGTA3<br>Valor investido: R$ 233,81<br>N compras/aportes: 7"}, {"x": "2017", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 223.5, "n_compras": 7.0, "text": "MPLU3<br>R$ 224<br>n=7", "hover": "Ano: 2017<br>Estratégia: Aleatória da Euforia #2<br>Ticker: MPLU3<br>Valor investido: R$ 223,50<br>N compras/aportes: 7"}, {"x": "2017", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 115.46340000000001, "n_compras": 3.0, "text": "IGTA3<br>R$ 115<br>n=3", "hover": "Ano: 2017<br>Estratégia: Aleatória da Euforia #3<br>Ticker: IGTA3<br>Valor investido: R$ 115,46<br>N compras/aportes: 3"}, {"x": "2017", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 197.5491, "n_compras": 13.0, "text": "YDUQ3<br>R$ 198<br>n=13", "hover": "Ano: 2017<br>Estratégia: Aleatória da Euforia #4<br>Ticker: YDUQ3<br>Valor investido: R$ 197,55<br>N compras/aportes: 13"}, {"x": "2017", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 237.7305, "n_compras": 6.0, "text": "MDIA3<br>R$ 238<br>n=6", "hover": "Ano: 2017<br>Estratégia: Aleatória da Euforia #5<br>Ticker: MDIA3<br>Valor investido: R$ 237,73<br>N compras/aportes: 6"}, {"x": "2017", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 403.2061, "n_compras": 11.0, "text": "MDIA3<br>R$ 403<br>n=11", "hover": "Ano: 2017<br>Estratégia: Euforia<br>Ticker: MDIA3<br>Valor investido: R$ 403,21<br>N compras/aportes: 11"}, {"x": "2018", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 207.79999999999998, "n_compras": 3.0, "text": "FIBR3<br>R$ 208<br>n=3", "hover": "Ano: 2018<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: FIBR3<br>Valor investido: R$ 207,80<br>N compras/aportes: 3"}, {"x": "2018", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 225.8318, "n_compras": 1.0, "text": "OIBR3<br>R$ 226<br>n=1", "hover": "Ano: 2018<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: OIBR3<br>Valor investido: R$ 225,83<br>N compras/aportes: 1"}, {"x": "2018", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 139.8862, "n_compras": 2.0, "text": "BRPR3<br>R$ 140<br>n=2", "hover": "Ano: 2018<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: BRPR3<br>Valor investido: R$ 139,89<br>N compras/aportes: 2"}, {"x": "2018", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 99.2846, "n_compras": 2.0, "text": "CVCB3<br>R$ 99<br>n=2", "hover": "Ano: 2018<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: CVCB3<br>Valor investido: R$ 99,28<br>N compras/aportes: 2"}, {"x": "2018", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 177.1078, "n_compras": 4.0, "text": "CVCB3<br>R$ 177<br>n=4", "hover": "Ano: 2018<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: CVCB3<br>Valor investido: R$ 177,11<br>N compras/aportes: 4"}, {"x": "2018", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 160.7438, "n_compras": 1.0, "text": "OIBR3<br>R$ 161<br>n=1", "hover": "Ano: 2018<br>Estratégia: Aleatória da Euforia #1<br>Ticker: OIBR3<br>Valor investido: R$ 160,74<br>N compras/aportes: 1"}, {"x": "2018", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 196.74630000000002, "n_compras": 5.0, "text": "MGLU3<br>R$ 197<br>n=5", "hover": "Ano: 2018<br>Estratégia: Aleatória da Euforia #2<br>Ticker: MGLU3<br>Valor investido: R$ 196,75<br>N compras/aportes: 5"}, {"x": "2018", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 195.8614, "n_compras": 4.0, "text": "CVCB3<br>R$ 196<br>n=4", "hover": "Ano: 2018<br>Estratégia: Aleatória da Euforia #3<br>Ticker: CVCB3<br>Valor investido: R$ 195,86<br>N compras/aportes: 4"}, {"x": "2018", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 259.9403, "n_compras": 7.0, "text": "MGLU3<br>R$ 260<br>n=7", "hover": "Ano: 2018<br>Estratégia: Aleatória da Euforia #4<br>Ticker: MGLU3<br>Valor investido: R$ 259,94<br>N compras/aportes: 7"}, {"x": "2018", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 137.3544, "n_compras": 2.0, "text": "BRPR3<br>R$ 137<br>n=2", "hover": "Ano: 2018<br>Estratégia: Aleatória da Euforia #5<br>Ticker: BRPR3<br>Valor investido: R$ 137,35<br>N compras/aportes: 2"}, {"x": "2018", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 225.8318, "n_compras": 1.0, "text": "OIBR3<br>R$ 226<br>n=1", "hover": "Ano: 2018<br>Estratégia: Capitulação<br>Ticker: OIBR3<br>Valor investido: R$ 225,83<br>N compras/aportes: 1"}, {"x": "2018", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 100.52, "n_compras": 2.0, "text": "FIBR3<br>R$ 101<br>n=2", "hover": "Ano: 2018<br>Estratégia: Euforia<br>Ticker: FIBR3<br>Valor investido: R$ 100,52<br>N compras/aportes: 2"}, {"x": "2019", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 165.584, "n_compras": 4.0, "text": "AZZA3<br>R$ 166<br>n=4", "hover": "Ano: 2019<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: AZZA3<br>Valor investido: R$ 165,58<br>N compras/aportes: 4"}, {"x": "2019", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 140.6423, "n_compras": 1.0, "text": "HAPV3<br>R$ 141<br>n=1", "hover": "Ano: 2019<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: HAPV3<br>Valor investido: R$ 140,64<br>N compras/aportes: 1"}, {"x": "2019", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 176.0588, "n_compras": 4.0, "text": "IGTA3<br>R$ 176<br>n=4", "hover": "Ano: 2019<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: IGTA3<br>Valor investido: R$ 176,06<br>N compras/aportes: 4"}, {"x": "2019", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 168.2732, "n_compras": 4.0, "text": "CGAS5<br>R$ 168<br>n=4", "hover": "Ano: 2019<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: CGAS5<br>Valor investido: R$ 168,27<br>N compras/aportes: 4"}, {"x": "2019", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 284.1794, "n_compras": 2.0, "text": "HAPV3<br>R$ 284<br>n=2", "hover": "Ano: 2019<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: HAPV3<br>Valor investido: R$ 284,18<br>N compras/aportes: 2"}, {"x": "2019", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 287.2527, "n_compras": 2.0, "text": "HAPV3<br>R$ 287<br>n=2", "hover": "Ano: 2019<br>Estratégia: Aleatória da Euforia #2<br>Ticker: HAPV3<br>Valor investido: R$ 287,25<br>N compras/aportes: 2"}, {"x": "2019", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 253.463, "n_compras": 2.0, "text": "HAPV3<br>R$ 253<br>n=2", "hover": "Ano: 2019<br>Estratégia: Aleatória da Euforia #3<br>Ticker: HAPV3<br>Valor investido: R$ 253,46<br>N compras/aportes: 2"}, {"x": "2019", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 162.9484, "n_compras": 4.0, "text": "AZZA3<br>R$ 163<br>n=4", "hover": "Ano: 2019<br>Estratégia: Aleatória da Euforia #4<br>Ticker: AZZA3<br>Valor investido: R$ 162,95<br>N compras/aportes: 4"}, {"x": "2019", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 245.1116, "n_compras": 2.0, "text": "HAPV3<br>R$ 245<br>n=2", "hover": "Ano: 2019<br>Estratégia: Aleatória da Euforia #5<br>Ticker: HAPV3<br>Valor investido: R$ 245,11<br>N compras/aportes: 2"}, {"x": "2019", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 145.9804, "n_compras": 1.0, "text": "HAPV3<br>R$ 146<br>n=1", "hover": "Ano: 2019<br>Estratégia: Capitulação<br>Ticker: HAPV3<br>Valor investido: R$ 145,98<br>N compras/aportes: 1"}, {"x": "2019", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 301.6296, "n_compras": 7.0, "text": "AZZA3<br>R$ 302<br>n=7", "hover": "Ano: 2019<br>Estratégia: Euforia<br>Ticker: AZZA3<br>Valor investido: R$ 301,63<br>N compras/aportes: 7"}, {"x": "2020", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 301.0683, "n_compras": 2.0, "text": "HAPV3<br>R$ 301<br>n=2", "hover": "Ano: 2020<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: HAPV3<br>Valor investido: R$ 301,07<br>N compras/aportes: 2"}, {"x": "2020", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 498.2207, "n_compras": 3.0, "text": "HAPV3<br>R$ 498<br>n=3", "hover": "Ano: 2020<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: HAPV3<br>Valor investido: R$ 498,22<br>N compras/aportes: 3"}, {"x": "2020", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 375.33410000000003, "n_compras": 2.0, "text": "HAPV3<br>R$ 375<br>n=2", "hover": "Ano: 2020<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: HAPV3<br>Valor investido: R$ 375,33<br>N compras/aportes: 2"}, {"x": "2020", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 364.83029999999997, "n_compras": 2.0, "text": "HAPV3<br>R$ 365<br>n=2", "hover": "Ano: 2020<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: HAPV3<br>Valor investido: R$ 364,83<br>N compras/aportes: 2"}, {"x": "2020", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 341.432, "n_compras": 2.0, "text": "HAPV3<br>R$ 341<br>n=2", "hover": "Ano: 2020<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: HAPV3<br>Valor investido: R$ 341,43<br>N compras/aportes: 2"}, {"x": "2020", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 510.4028, "n_compras": 3.0, "text": "HAPV3<br>R$ 510<br>n=3", "hover": "Ano: 2020<br>Estratégia: Aleatória da Euforia #1<br>Ticker: HAPV3<br>Valor investido: R$ 510,40<br>N compras/aportes: 3"}, {"x": "2020", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 201.2336, "n_compras": 1.0, "text": "HAPV3<br>R$ 201<br>n=1", "hover": "Ano: 2020<br>Estratégia: Aleatória da Euforia #2<br>Ticker: HAPV3<br>Valor investido: R$ 201,23<br>N compras/aportes: 1"}, {"x": "2020", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 194.6011, "n_compras": 1.0, "text": "HAPV3<br>R$ 195<br>n=1", "hover": "Ano: 2020<br>Estratégia: Aleatória da Euforia #3<br>Ticker: HAPV3<br>Valor investido: R$ 194,60<br>N compras/aportes: 1"}, {"x": "2020", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 414.7079, "n_compras": 2.0, "text": "HAPV3<br>R$ 415<br>n=2", "hover": "Ano: 2020<br>Estratégia: Aleatória da Euforia #4<br>Ticker: HAPV3<br>Valor investido: R$ 414,71<br>N compras/aportes: 2"}, {"x": "2020", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 194.6611, "n_compras": 1.0, "text": "HAPV3<br>R$ 195<br>n=1", "hover": "Ano: 2020<br>Estratégia: Aleatória da Euforia #5<br>Ticker: HAPV3<br>Valor investido: R$ 194,66<br>N compras/aportes: 1"}, {"x": "2020", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 497.9732, "n_compras": 3.0, "text": "HAPV3<br>R$ 498<br>n=3", "hover": "Ano: 2020<br>Estratégia: Capitulação<br>Ticker: HAPV3<br>Valor investido: R$ 497,97<br>N compras/aportes: 3"}, {"x": "2020", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 415.6649, "n_compras": 2.0, "text": "HAPV3<br>R$ 416<br>n=2", "hover": "Ano: 2020<br>Estratégia: Euforia<br>Ticker: HAPV3<br>Valor investido: R$ 415,66<br>N compras/aportes: 2"}, {"x": "2021", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 452.6853, "n_compras": 2.0, "text": "HAPV3<br>R$ 453<br>n=2", "hover": "Ano: 2021<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: HAPV3<br>Valor investido: R$ 452,69<br>N compras/aportes: 2"}, {"x": "2021", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 298.0, "n_compras": 1.0, "text": "BHIA3<br>R$ 298<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: BHIA3<br>Valor investido: R$ 298,00<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 484.2717, "n_compras": 2.0, "text": "HAPV3<br>R$ 484<br>n=2", "hover": "Ano: 2021<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: HAPV3<br>Valor investido: R$ 484,27<br>N compras/aportes: 2"}, {"x": "2021", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 219.7094, "n_compras": 1.0, "text": "HAPV3<br>R$ 220<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: HAPV3<br>Valor investido: R$ 219,71<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 219.7094, "n_compras": 1.0, "text": "HAPV3<br>R$ 220<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: HAPV3<br>Valor investido: R$ 219,71<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 218.6609, "n_compras": 1.0, "text": "HAPV3<br>R$ 219<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Euforia #2<br>Ticker: HAPV3<br>Valor investido: R$ 218,66<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 377.0, "n_compras": 1.0, "text": "BHIA3<br>R$ 377<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Euforia #3<br>Ticker: BHIA3<br>Valor investido: R$ 377,00<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 84.13, "n_compras": 1.0, "text": "GNDI3<br>R$ 84<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Euforia #4<br>Ticker: GNDI3<br>Valor investido: R$ 84,13<br>N compras/aportes: 1"}, {"x": "2021", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 67.7501, "n_compras": 1.0, "text": "AZZA3<br>R$ 68<br>n=1", "hover": "Ano: 2021<br>Estratégia: Aleatória da Euforia #5<br>Ticker: AZZA3<br>Valor investido: R$ 67,75<br>N compras/aportes: 1"}, {"x": "2021", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 222.5576, "n_compras": 1.0, "text": "HAPV3<br>R$ 223<br>n=1", "hover": "Ano: 2021<br>Estratégia: Capitulação<br>Ticker: HAPV3<br>Valor investido: R$ 222,56<br>N compras/aportes: 1"}, {"x": "2021", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 83.6916, "n_compras": 1.0, "text": "GNDI3<br>R$ 84<br>n=1", "hover": "Ano: 2021<br>Estratégia: Euforia<br>Ticker: GNDI3<br>Valor investido: R$ 83,69<br>N compras/aportes: 1"}, {"x": "2022", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 211.4687, "n_compras": 1.0, "text": "GFSA3<br>R$ 211<br>n=1", "hover": "Ano: 2022<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: GFSA3<br>Valor investido: R$ 211,47<br>N compras/aportes: 1"}, {"x": "2022", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 220.4022, "n_compras": 1.0, "text": "GFSA3<br>R$ 220<br>n=1", "hover": "Ano: 2022<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: GFSA3<br>Valor investido: R$ 220,40<br>N compras/aportes: 1"}, {"x": "2022", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 194.3775, "n_compras": 3.0, "text": "AZZA3<br>R$ 194<br>n=3", "hover": "Ano: 2022<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: AZZA3<br>Valor investido: R$ 194,38<br>N compras/aportes: 3"}, {"x": "2022", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 149.4214, "n_compras": 2.0, "text": "AZZA3<br>R$ 149<br>n=2", "hover": "Ano: 2022<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: AZZA3<br>Valor investido: R$ 149,42<br>N compras/aportes: 2"}, {"x": "2022", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 150.1284, "n_compras": 2.0, "text": "AZZA3<br>R$ 150<br>n=2", "hover": "Ano: 2022<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: AZZA3<br>Valor investido: R$ 150,13<br>N compras/aportes: 2"}, {"x": "2022", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 217.6402, "n_compras": 3.0, "text": "AZZA3<br>R$ 218<br>n=3", "hover": "Ano: 2022<br>Estratégia: Aleatória da Euforia #1<br>Ticker: AZZA3<br>Valor investido: R$ 217,64<br>N compras/aportes: 3"}, {"x": "2022", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 141.58370000000002, "n_compras": 2.0, "text": "AZZA3<br>R$ 142<br>n=2", "hover": "Ano: 2022<br>Estratégia: Aleatória da Euforia #2<br>Ticker: AZZA3<br>Valor investido: R$ 141,58<br>N compras/aportes: 2"}, {"x": "2022", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 206.92129999999997, "n_compras": 3.0, "text": "AZZA3<br>R$ 207<br>n=3", "hover": "Ano: 2022<br>Estratégia: Aleatória da Euforia #3<br>Ticker: AZZA3<br>Valor investido: R$ 206,92<br>N compras/aportes: 3"}, {"x": "2022", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 227.8498, "n_compras": 1.0, "text": "GFSA3<br>R$ 228<br>n=1", "hover": "Ano: 2022<br>Estratégia: Aleatória da Euforia #4<br>Ticker: GFSA3<br>Valor investido: R$ 227,85<br>N compras/aportes: 1"}, {"x": "2022", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 200.3058, "n_compras": 3.0, "text": "AZZA3<br>R$ 200<br>n=3", "hover": "Ano: 2022<br>Estratégia: Aleatória da Euforia #5<br>Ticker: AZZA3<br>Valor investido: R$ 200,31<br>N compras/aportes: 3"}, {"x": "2022", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 219.4831, "n_compras": 3.0, "text": "AZZA3<br>R$ 219<br>n=3", "hover": "Ano: 2022<br>Estratégia: Capitulação<br>Ticker: AZZA3<br>Valor investido: R$ 219,48<br>N compras/aportes: 3"}, {"x": "2022", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 84.102, "n_compras": 1.0, "text": "AZZA3<br>R$ 84<br>n=1", "hover": "Ano: 2022<br>Estratégia: Euforia<br>Ticker: AZZA3<br>Valor investido: R$ 84,10<br>N compras/aportes: 1"}, {"x": "2023", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 78.8598, "n_compras": 2.0, "text": "PRIO3<br>R$ 79<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: PRIO3<br>Valor investido: R$ 78,86<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 70.8348, "n_compras": 2.0, "text": "MDIA3<br>R$ 71<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: MDIA3<br>Valor investido: R$ 70,83<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 77.6708, "n_compras": 2.0, "text": "HYPE3<br>R$ 78<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: HYPE3<br>Valor investido: R$ 77,67<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 74.627, "n_compras": 2.0, "text": "ENGI11<br>R$ 75<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: ENGI11<br>Valor investido: R$ 74,63<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 70.0934, "n_compras": 1.0, "text": "AZZA3<br>R$ 70<br>n=1", "hover": "Ano: 2023<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: AZZA3<br>Valor investido: R$ 70,09<br>N compras/aportes: 1"}, {"x": "2023", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 198.2312, "n_compras": 3.0, "text": "AZZA3<br>R$ 198<br>n=3", "hover": "Ano: 2023<br>Estratégia: Aleatória da Euforia #1<br>Ticker: AZZA3<br>Valor investido: R$ 198,23<br>N compras/aportes: 3"}, {"x": "2023", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 68.871, "n_compras": 2.0, "text": "WEGE3<br>R$ 69<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Euforia #2<br>Ticker: WEGE3<br>Valor investido: R$ 68,87<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 70.0006, "n_compras": 2.0, "text": "WEGE3<br>R$ 70<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Euforia #3<br>Ticker: WEGE3<br>Valor investido: R$ 70,00<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 123.7799, "n_compras": 2.0, "text": "VALE3<br>R$ 124<br>n=2", "hover": "Ano: 2023<br>Estratégia: Aleatória da Euforia #4<br>Ticker: VALE3<br>Valor investido: R$ 123,78<br>N compras/aportes: 2"}, {"x": "2023", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 145.542, "n_compras": 4.0, "text": "HYPE3<br>R$ 146<br>n=4", "hover": "Ano: 2023<br>Estratégia: Aleatória da Euforia #5<br>Ticker: HYPE3<br>Valor investido: R$ 145,54<br>N compras/aportes: 4"}, {"x": "2023", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 180.7227, "n_compras": 3.0, "text": "VALE3<br>R$ 181<br>n=3", "hover": "Ano: 2023<br>Estratégia: Capitulação<br>Ticker: VALE3<br>Valor investido: R$ 180,72<br>N compras/aportes: 3"}, {"x": "2023", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 133.8992, "n_compras": 4.0, "text": "SMTO3<br>R$ 134<br>n=4", "hover": "Ano: 2023<br>Estratégia: Euforia<br>Ticker: SMTO3<br>Valor investido: R$ 133,90<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "valor_investido": 193.3526, "n_compras": 6.0, "text": "PSSA3<br>R$ 193<br>n=6", "hover": "Ano: 2024<br>Estratégia: Aleatória da Capitulação #1<br>Ticker: PSSA3<br>Valor investido: R$ 193,35<br>N compras/aportes: 6"}, {"x": "2024", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "valor_investido": 187.3874, "n_compras": 6.0, "text": "TAEE11<br>R$ 187<br>n=6", "hover": "Ano: 2024<br>Estratégia: Aleatória da Capitulação #2<br>Ticker: TAEE11<br>Valor investido: R$ 187,39<br>N compras/aportes: 6"}, {"x": "2024", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 125.1878, "n_compras": 4.0, "text": "TAEE11<br>R$ 125<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: TAEE11<br>Valor investido: R$ 125,19<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "valor_investido": 125.50720000000001, "n_compras": 4.0, "text": "MDIA3<br>R$ 126<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Capitulação #4<br>Ticker: MDIA3<br>Valor investido: R$ 125,51<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "valor_investido": 125.9362, "n_compras": 4.0, "text": "EQTL3<br>R$ 126<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Capitulação #5<br>Ticker: EQTL3<br>Valor investido: R$ 125,94<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 187.9002, "n_compras": 6.0, "text": "PSSA3<br>R$ 188<br>n=6", "hover": "Ano: 2024<br>Estratégia: Aleatória da Euforia #1<br>Ticker: PSSA3<br>Valor investido: R$ 187,90<br>N compras/aportes: 6"}, {"x": "2024", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 123.84540000000001, "n_compras": 4.0, "text": "EQTL3<br>R$ 124<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Euforia #2<br>Ticker: EQTL3<br>Valor investido: R$ 123,85<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 190.9674, "n_compras": 6.0, "text": "PSSA3<br>R$ 191<br>n=6", "hover": "Ano: 2024<br>Estratégia: Aleatória da Euforia #3<br>Ticker: PSSA3<br>Valor investido: R$ 190,97<br>N compras/aportes: 6"}, {"x": "2024", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 130.7124, "n_compras": 4.0, "text": "EQTL3<br>R$ 131<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Euforia #4<br>Ticker: EQTL3<br>Valor investido: R$ 130,71<br>N compras/aportes: 4"}, {"x": "2024", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 125.633, "n_compras": 4.0, "text": "TAEE11<br>R$ 126<br>n=4", "hover": "Ano: 2024<br>Estratégia: Aleatória da Euforia #5<br>Ticker: TAEE11<br>Valor investido: R$ 125,63<br>N compras/aportes: 4"}, {"x": "2024", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 124.6532, "n_compras": 4.0, "text": "PSSA3<br>R$ 125<br>n=4", "hover": "Ano: 2024<br>Estratégia: Capitulação<br>Ticker: PSSA3<br>Valor investido: R$ 124,65<br>N compras/aportes: 4"}, {"x": "2025", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "valor_investido": 82.1152, "n_compras": 1.0, "text": "SBSP3<br>R$ 82<br>n=1", "hover": "Ano: 2025<br>Estratégia: Aleatória da Capitulação #3<br>Ticker: SBSP3<br>Valor investido: R$ 82,12<br>N compras/aportes: 1"}, {"x": "2025", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "valor_investido": 317.8944, "n_compras": 3.0, "text": "SBSP3<br>R$ 318<br>n=3", "hover": "Ano: 2025<br>Estratégia: Aleatória da Euforia #1<br>Ticker: SBSP3<br>Valor investido: R$ 317,89<br>N compras/aportes: 3"}, {"x": "2025", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "valor_investido": 121.59, "n_compras": 4.0, "text": "RDOR3<br>R$ 122<br>n=4", "hover": "Ano: 2025<br>Estratégia: Aleatória da Euforia #2<br>Ticker: RDOR3<br>Valor investido: R$ 121,59<br>N compras/aportes: 4"}, {"x": "2025", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "valor_investido": 94.6084, "n_compras": 1.0, "text": "SBSP3<br>R$ 95<br>n=1", "hover": "Ano: 2025<br>Estratégia: Aleatória da Euforia #3<br>Ticker: SBSP3<br>Valor investido: R$ 94,61<br>N compras/aportes: 1"}, {"x": "2025", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "valor_investido": 205.2611, "n_compras": 2.0, "text": "SBSP3<br>R$ 205<br>n=2", "hover": "Ano: 2025<br>Estratégia: Aleatória da Euforia #4<br>Ticker: SBSP3<br>Valor investido: R$ 205,26<br>N compras/aportes: 2"}, {"x": "2025", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "valor_investido": 139.91, "n_compras": 4.0, "text": "EQTL3<br>R$ 140<br>n=4", "hover": "Ano: 2025<br>Estratégia: Aleatória da Euforia #5<br>Ticker: EQTL3<br>Valor investido: R$ 139,91<br>N compras/aportes: 4"}, {"x": "2025", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "valor_investido": 86.1342, "n_compras": 1.0, "text": "SBSP3<br>R$ 86<br>n=1", "hover": "Ano: 2025<br>Estratégia: Capitulação<br>Ticker: SBSP3<br>Valor investido: R$ 86,13<br>N compras/aportes: 1"}, {"x": "2025", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "valor_investido": 252.64659999999998, "n_compras": 2.0, "text": "SBSP3<br>R$ 253<br>n=2", "hover": "Ano: 2025<br>Estratégia: Euforia<br>Ticker: SBSP3<br>Valor investido: R$ 252,65<br>N compras/aportes: 2"}]};
+    const DATA = CONFIG.data || [];
+    const METRICS = CONFIG.metrics || [];
+
+    const chart = document.getElementById("chart");
+    const emptyState = document.getElementById("emptyState");
+    const metricSelect = document.getElementById("metricSelect");
+    const topNSelect = document.getElementById("topNSelect");
+    const metricControl = document.getElementById("metricControl");
+
+    let selectedCategories = new Set(CONFIG.categories || []);
+    let selectedStrategies = new Set(CONFIG.strategies || []);
+
+    function toNumber(v) {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr.filter(x => x !== null && x !== undefined && x !== "")));
+    }
+
+    function makeOptions(select, items) {
+      select.innerHTML = "";
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.value || item;
+        opt.textContent = item.label || item;
+        select.appendChild(opt);
+      });
+    }
+
+    function buildMulti(rootId, items, selectedSet, labelAll, onChange) {
+      const root = document.getElementById(rootId);
+      root.innerHTML = "";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "multi-button";
+
+      const label = document.createElement("span");
+      const arrow = document.createElement("span");
+      arrow.textContent = "▾";
+      button.appendChild(label);
+      button.appendChild(arrow);
+
+      const panel = document.createElement("div");
+      panel.className = "multi-panel";
+
+      const actions = document.createElement("div");
+      actions.className = "multi-actions";
+
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.textContent = "Selecionar tudo";
+
+      const noneBtn = document.createElement("button");
+      noneBtn.type = "button";
+      noneBtn.textContent = "Deselecionar tudo";
+
+      actions.appendChild(allBtn);
+      actions.appendChild(noneBtn);
+      panel.appendChild(actions);
+
+      const updateLabel = () => {
+        if (selectedSet.size === 0) label.textContent = "Nenhum item";
+        else if (selectedSet.size === items.length) label.textContent = labelAll;
+        else label.textContent = `${selectedSet.size} selecionado(s)`;
+      };
+
+      const renderChecks = () => {
+        panel.querySelectorAll(".multi-option").forEach(el => el.remove());
+        items.forEach(item => {
+          const row = document.createElement("label");
+          row.className = "multi-option";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = selectedSet.has(item);
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) selectedSet.add(item);
+            else selectedSet.delete(item);
+            updateLabel();
+            onChange();
+          });
+
+          const txt = document.createElement("span");
+          txt.textContent = item;
+
+          row.appendChild(checkbox);
+          row.appendChild(txt);
+          panel.appendChild(row);
+        });
+      };
+
+      allBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        items.forEach(item => selectedSet.add(item));
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      noneBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".multi-panel.open").forEach(p => {
+          if (p !== panel) p.classList.remove("open");
+        });
+        panel.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (ev) => {
+        if (!root.contains(ev.target)) panel.classList.remove("open");
+      });
+
+      root.appendChild(button);
+      root.appendChild(panel);
+      renderChecks();
+      updateLabel();
+    }
+
+    function metricLabel(field) {
+      const found = METRICS.find(m => m.field === field);
+      return found ? found.label : field;
+    }
+
+    function activeMetric() {
+      return metricSelect.value || CONFIG.initialMetric;
+    }
+
+    function filteredRows(metric) {
+      return DATA.filter(row => {
+        if (selectedCategories.size && !selectedCategories.has(String(row.categoria))) return false;
+        if (selectedStrategies.size && !selectedStrategies.has(String(row.estrategia))) return false;
+        return toNumber(row[metric]) !== null;
+      });
+    }
+
+    function selectedXValues(rows, metric) {
+      const totals = new Map();
+      rows.forEach(row => {
+        const x = String(row.x || "");
+        const value = toNumber(row[metric]);
+        if (!x || value === null) return;
+        totals.set(x, (totals.get(x) || 0) + Math.abs(value));
+      });
+
+      let xs = Array.from(totals.keys());
+      if (CONFIG.xSort === "numeric") {
+        xs.sort((a, b) => Number(a) - Number(b));
+      } else if (CONFIG.xSort === "text" || CONFIG.xSort === "date") {
+        xs.sort((a, b) => String(a).localeCompare(String(b)));
+      } else {
+        xs.sort((a, b) => (totals.get(b) || 0) - (totals.get(a) || 0));
+        const topN = Number(topNSelect.value) || CONFIG.topN || 30;
+        xs = xs.slice(0, topN);
+      }
+      return xs;
+    }
+
+    function render() {
+      const metric = activeMetric();
+      const rows = filteredRows(metric);
+      const xs = selectedXValues(rows, metric);
+      const ys = unique(rows.map(r => String(r.y || ""))).sort();
+
+      const z = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? toNumber(row[metric]) : null;
+      }));
+
+      const text = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? (row.text || "") : "";
+      }));
+
+      const custom = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? (row.hover || "") : "";
+      }));
+
+      emptyState.style.display = rows.length === 0 || xs.length === 0 || ys.length === 0 ? "block" : "none";
+
+      const trace = {
+        type: "heatmap",
+        x: xs,
+        y: ys,
+        z: z,
+        text: text,
+        texttemplate: "%{text}",
+        textfont: { size: 10 },
+        customdata: custom,
+        colorscale: "Blues",
+        colorbar: { title: metricLabel(metric) },
+        hovertemplate: "%{customdata}<extra></extra>",
+        zsmooth: false
+      };
+
+      const layout = {
+        title: { text: CONFIG.title, x: 0.02, xanchor: "left", y: 0.98, yanchor: "top" },
+        margin: { l: Math.max(285, 155 + Math.min(260, Math.max(...ys.map(y => String(y).length)) * 5)), r: 58, t: 82, b: 150 },
+        height: Math.max(650, Math.min(1150, 95 + ys.length * 48 + xs.length * 6)),
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        xaxis: { title: { text: CONFIG.xTitle || "", standoff: 14 }, automargin: true, tickangle: -45, tickfont: { size: xs.length > 18 ? 10 : 11 } },
+        yaxis: { title: { text: CONFIG.yTitle || "", standoff: 30 }, automargin: true, tickfont: { size: ys.length > 18 ? 10 : 11 } },
+      };
+
+      Plotly.react(chart, [trace], layout, {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ["lasso2d", "select2d"]
+      });
+    }
+
+    function init() {
+      if (METRICS.length <= 1) {
+        metricControl.style.display = "none";
+      } else {
+        makeOptions(metricSelect, METRICS.map(m => ({ value: m.field, label: m.label })));
+        metricSelect.value = CONFIG.initialMetric;
+        metricSelect.addEventListener("change", render);
+      }
+
+      if (CONFIG.xSort === "numeric") {
+        document.getElementById("topNControl").style.display = "none";
+      }
+
+      buildMulti("categoryMulti", CONFIG.categories || [], selectedCategories, "Todas as categorias", render);
+      buildMulti("strategyMulti", CONFIG.strategies || [], selectedStrategies, "Todas as estratégias", render);
+      topNSelect.addEventListener("change", render);
+
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

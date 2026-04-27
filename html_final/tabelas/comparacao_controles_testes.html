@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparação com controles — testes estatísticos</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Comparação com controles — testes estatísticos</div>
+  <div class="table-subtitle">Testes estatísticos aplicados às comparações com controles.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Estratégia de referência</th><th data-col='2'>Tipo comparacao</th><th data-col='3'>Grupo comparacao</th><th data-col='4'>N periodos</th><th data-col='5'>p-valor teste de sinal</th><th data-col='6'>p-valor Wilcoxon</th><th data-col='7'>p-valor permutação</th><th data-col='8'>Estatistica wilcoxon</th><th data-col='9'>Estatistica observada permutacao</th><th data-col='10'>Tipo controle mensal</th><th data-col='11'>N validos teste sinal</th><th data-col='12'>P valor holm teste sinal</th><th data-col='13'>Status teste sinal</th><th data-col='14'>P valor holm wilcoxon</th><th data-col='15'>Status wilcoxon</th><th data-col='16'>N permutacoes</th><th data-col='17'>N testes significativos 5pct</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,3704</td><td>0,7148</td><td>0,7017</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,8875</td><td>0,9212</td><td>0,7856</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,6837</td><td>0,6068</td><td>0,3713</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,8210</td><td>0,9360</td><td>0,6219</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,5439</td><td>0,8082</td><td>0,6023</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,5446</td><td>0,2108</td><td>0,5319</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,6031</td><td>0,4226</td><td>0,6317</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,0584</td><td>0,1469</td><td>0,4755</td><td></td><td></td><td></td><td></td><td>0,5840</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,4554</td><td>0,2643</td><td>0,6461</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>3.599</td><td>0,6316</td><td>0,6041</td><td>0,8406</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,5987</td><td>0,7511</td><td>0,6991</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,4013</td><td>0,8333</td><td>0,7834</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,7201</td><td>0,5508</td><td>0,3547</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,7733</td><td>0,8671</td><td>0,6287</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,7733</td><td>0,7390</td><td>0,6145</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,5000</td><td>0,2717</td><td>0,5437</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,7512</td><td>0,5734</td><td>0,6351</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,5673</td><td>0,3106</td><td>0,4827</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,8018</td><td>0,5327</td><td>0,6581</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>175</td><td>0,6945</td><td>0,7587</td><td>0,8484</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,1938</td><td>0,2651</td><td>0,6095</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,3872</td><td>0,5000</td><td>0,7203</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,3872</td><td>0,2915</td><td>0,3273</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,3872</td><td>0,2915</td><td>0,5711</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,1938</td><td>0,2164</td><td>0,5379</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,9807</td><td>0,9210</td><td>0,5625</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,9807</td><td>0,8461</td><td>0,6703</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,6128</td><td>0,5623</td><td>0,5493</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,9807</td><td>0,8267</td><td>0,7780</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>15</td><td>0,9270</td><td>0,8640</td><td>0,8564</td><td></td><td></td><td></td><td></td><td>1,0000</td><td>calculado</td><td>1,0000</td><td></td><td></td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,6856</td><td>0,7898</td><td>0,5112</td><td>3.187.095,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7734</td><td>0,9025</td><td>0,5307</td><td>3.156.557,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8680</td><td>0,9121</td><td>0,5462</td><td>3.152.951,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,5596</td><td>0,8805</td><td>0,5542</td><td>3.163.922,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7422</td><td>0,7996</td><td>0,4833</td><td>3.184.941,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,4933</td><td>0,7448</td><td>0,3978</td><td>3.196.276,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,4933</td><td>0,6821</td><td>0,3633</td><td>3.207.785,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,4801</td><td>0,7411</td><td>0,3903</td><td>3.196.994,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7529</td><td>0,7999</td><td>0,4113</td><td>3.184.872,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,3631</td><td>0,6951</td><td>0,3333</td><td>3.205.503,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7202</td><td>0,8538</td><td>0,4793</td><td>3.171.688,00</td><td>0,0000</td><td>acoes elegiveis Aportes Mensais</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,0939</td><td>0,3835</td><td>0,5492</td><td>3.255.759,00</td><td>-0,0000</td><td>Ibovespa</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,9395</td><td>0,8428</td><td>0,5452</td><td>3.174.609,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,9570</td><td>0,8593</td><td>0,5617</td><td>3.170.178,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8607</td><td>0,8245</td><td>0,5532</td><td>3.179.183,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8024</td><td>0,7189</td><td>0,4713</td><td>3.201.190,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8115</td><td>0,7178</td><td>0,4983</td><td>3.201.391,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7633</td><td>0,6425</td><td>0,3348</td><td>3.214.551,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,6974</td><td>0,5618</td><td>0,3148</td><td>3.227.607,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,6243</td><td>0,5788</td><td>0,3273</td><td>3.224.913,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8817</td><td>0,6604</td><td>0,4038</td><td>3.211.535,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,7422</td><td>0,5768</td><td>0,3013</td><td>3.225.231,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,8290</td><td>0,7850</td><td>0,4708</td><td>3.188.123,00</td><td>0,0000</td><td>acoes elegiveis Aportes Mensais</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>3.599</td><td>0,0782</td><td>0,2612</td><td>0,5412</td><td>3.277.159,00</td><td>-0,0000</td><td>Ibovespa</td><td>3.598</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,4101</td><td>0,7101</td><td>0,4628</td><td>7.244,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,7055</td><td>0,5142</td><td>7.253,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,6476</td><td>0,6839</td><td>0,5327</td><td>7.294,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,3524</td><td>0,6545</td><td>0,4908</td><td>7.348,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2476</td><td>0,6545</td><td>0,4668</td><td>7.348,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,5033</td><td>0,3763</td><td>7.607,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,1622</td><td>0,4823</td><td>0,3078</td><td>7.642,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,4913</td><td>0,3398</td><td>7.627,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,3524</td><td>0,5428</td><td>0,3898</td><td>7.541,00</td><td>0,0001</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,4614</td><td>0,3118</td><td>7.677,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,4698</td><td>0,6383</td><td>0,4393</td><td>7.377,00</td><td>0,0001</td><td>acoes elegiveis Aportes Mensais</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,3524</td><td>0,3494</td><td>0,4993</td><td>7.870,00</td><td>-0,0000</td><td>Ibovespa</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,5302</td><td>0,7412</td><td>0,5132</td><td>7.182,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,5899</td><td>0,7475</td><td>0,5582</td><td>7.169,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,4101</td><td>0,7003</td><td>0,5377</td><td>7.263,00</td><td>-0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2022</td><td>0,6338</td><td>0,4693</td><td>7.385,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,7021</td><td>0,6802</td><td>0,4868</td><td>7.301,00</td><td>0,0000</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,5302</td><td>0,5057</td><td>0,3468</td><td>7.603,00</td><td>0,0001</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,4412</td><td>0,3018</td><td>7.711,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,4101</td><td>0,4919</td><td>0,3353</td><td>7.626,00</td><td>0,0001</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,5302</td><td>0,5511</td><td>0,3663</td><td>7.527,00</td><td>0,0001</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,4101</td><td>0,4412</td><td>0,2969</td><td>7.711,00</td><td>0,0002</td><td>Controles Aleatórios</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,2979</td><td>0,6218</td><td>0,4238</td><td>7.406,00</td><td>0,0001</td><td>acoes elegiveis Aportes Mensais</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>174</td><td>0,1622</td><td>0,2667</td><td>0,5307</td><td>8.027,00</td><td>-0,0000</td><td>Ibovespa</td><td>174</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0898</td><td>0,0969</td><td>0,3703</td><td>74,00</td><td>0,0027</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0287</td><td>0,0863</td><td>0,3978</td><td>75,00</td><td>0,0019</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,2120</td><td>0,1629</td><td>0,4248</td><td>69,00</td><td>0,0017</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,2120</td><td>0,1479</td><td>0,4278</td><td>70,00</td><td>0,0016</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0898</td><td>0,0969</td><td>0,3678</td><td>74,00</td><td>0,0025</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0287</td><td>0,0676</td><td>0,2764</td><td>77,00</td><td>0,0038</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0065</td><td>0,0392</td><td>0,2284</td><td>81,00</td><td>0,0043</td><td>Controles Aleatórios</td><td>14</td><td>0,4658</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0065</td><td>0,0392</td><td>0,2484</td><td>81,00</td><td>0,0040</td><td>Controles Aleatórios</td><td>14</td><td>0,4658</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0065</td><td>0,0392</td><td>0,2864</td><td>81,00</td><td>0,0035</td><td>Controles Aleatórios</td><td>14</td><td>0,4658</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0065</td><td>0,0392</td><td>0,2239</td><td>81,00</td><td>0,0043</td><td>Controles Aleatórios</td><td>14</td><td>0,4658</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,0065</td><td>0,0453</td><td>0,3163</td><td>80,00</td><td>0,0029</td><td>acoes elegiveis Aportes Mensais</td><td>14</td><td>0,4658</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,2120</td><td>0,4276</td><td>0,4998</td><td>56,00</td><td>0,0000</td><td>Ibovespa</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,6047</td><td>0,4516</td><td>0,4443</td><td>55,00</td><td>0,0008</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,6047</td><td>0,4516</td><td>0,4528</td><td>55,00</td><td>0,0006</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,7880</td><td>0,5000</td><td>0,4753</td><td>53,00</td><td>0,0005</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,6047</td><td>0,4516</td><td>0,4058</td><td>55,00</td><td>0,0014</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,4276</td><td>0,3908</td><td>56,00</td><td>0,0016</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,6047</td><td>0,4039</td><td>0,3083</td><td>57,00</td><td>0,0026</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,3804</td><td>0,2629</td><td>58,00</td><td>0,0031</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,4039</td><td>0,2864</td><td>57,00</td><td>0,0029</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,6047</td><td>0,4516</td><td>0,3143</td><td>55,00</td><td>0,0024</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,3574</td><td>0,2444</td><td>59,00</td><td>0,0032</td><td>Controles Aleatórios</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,4276</td><td>0,3468</td><td>56,00</td><td>0,0018</td><td>acoes elegiveis Aportes Mensais</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>14</td><td>0,3953</td><td>0,5484</td><td>0,5782</td><td>51,00</td><td>-0,0011</td><td>Ibovespa</td><td>14</td><td>1,0000</td><td>calculado</td><td>1,0000</td><td>calculado</td><td>2.000</td><td>0,0000</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

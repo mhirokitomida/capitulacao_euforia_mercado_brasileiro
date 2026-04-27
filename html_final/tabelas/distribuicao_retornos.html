@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distribuição de retornos</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Distribuição de retornos</div>
+  <div class="table-subtitle">Estatísticas de distribuição dos retornos.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Frequência (2)</th><th data-col='2'>Estratégia</th><th data-col='3'>Grupo</th><th data-col='4'>Grupo (2)</th><th data-col='5'>N periodos</th><th data-col='6'>Retorno medio</th><th data-col='7'>Retorno mediano</th><th data-col='8'>Retorno desvio padrao</th><th data-col='9'>Retorno minimo</th><th data-col='10'>Retorno p05</th><th data-col='11'>Retorno p25</th><th data-col='12'>Retorno p75</th><th data-col='13'>Retorno p95</th><th data-col='14'>Retorno maximo</th><th data-col='15'>Pct periodos positivos</th><th data-col='16'>Pct periodos negativos</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>diaria</td><td>Diária</td><td>CDI-Only</td><td>benchmark</td><td>Benchmarks</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,01%</td><td>0,00%</td><td>0,01%</td><td>0,03%</td><td>0,05%</td><td>0,05%</td><td>0,06%</td><td>99,97%</td><td>0,00%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark</td><td>Benchmarks</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,51%</td><td>-5,84%</td><td>-0,72%</td><td>-0,17%</td><td>0,27%</td><td>0,81%</td><td>4,99%</td><td>56,00%</td><td>43,94%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark</td><td>Benchmarks</td><td>3.600</td><td>0,04%</td><td>0,03%</td><td>1,48%</td><td>-14,78%</td><td>-2,24%</td><td>-0,74%</td><td>0,84%</td><td>2,23%</td><td>13,91%</td><td>51,00%</td><td>48,86%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,43%</td><td>-5,38%</td><td>-0,61%</td><td>-0,08%</td><td>0,18%</td><td>0,68%</td><td>2,90%</td><td>66,66%</td><td>33,31%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,42%</td><td>-5,15%</td><td>-0,61%</td><td>-0,08%</td><td>0,17%</td><td>0,68%</td><td>2,78%</td><td>67,21%</td><td>32,76%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,37%</td><td>-4,70%</td><td>-0,53%</td><td>-0,06%</td><td>0,16%</td><td>0,59%</td><td>2,48%</td><td>67,63%</td><td>32,34%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,43%</td><td>-5,43%</td><td>-0,62%</td><td>-0,09%</td><td>0,19%</td><td>0,68%</td><td>2,96%</td><td>65,71%</td><td>34,26%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,44%</td><td>-5,53%</td><td>-0,62%</td><td>-0,09%</td><td>0,18%</td><td>0,68%</td><td>3,26%</td><td>65,93%</td><td>34,04%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,32%</td><td>-3,91%</td><td>-0,46%</td><td>-0,05%</td><td>0,14%</td><td>0,53%</td><td>2,09%</td><td>69,24%</td><td>30,73%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,37%</td><td>-4,74%</td><td>-0,52%</td><td>-0,05%</td><td>0,15%</td><td>0,59%</td><td>2,57%</td><td>68,60%</td><td>31,37%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,37%</td><td>-4,78%</td><td>-0,52%</td><td>-0,06%</td><td>0,16%</td><td>0,60%</td><td>2,61%</td><td>68,55%</td><td>31,43%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,37%</td><td>-4,82%</td><td>-0,53%</td><td>-0,05%</td><td>0,15%</td><td>0,60%</td><td>2,60%</td><td>69,49%</td><td>30,48%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,40%</td><td>-5,10%</td><td>-0,57%</td><td>-0,07%</td><td>0,17%</td><td>0,64%</td><td>2,70%</td><td>67,88%</td><td>32,09%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,47%</td><td>-6,04%</td><td>-0,67%</td><td>-0,12%</td><td>0,23%</td><td>0,71%</td><td>3,32%</td><td>58,94%</td><td>41,00%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,48%</td><td>-6,18%</td><td>-0,67%</td><td>-0,13%</td><td>0,23%</td><td>0,73%</td><td>3,49%</td><td>59,03%</td><td>40,92%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,47%</td><td>-6,07%</td><td>-0,67%</td><td>-0,12%</td><td>0,22%</td><td>0,73%</td><td>3,44%</td><td>58,64%</td><td>41,31%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,48%</td><td>-6,06%</td><td>-0,67%</td><td>-0,13%</td><td>0,22%</td><td>0,74%</td><td>3,43%</td><td>58,47%</td><td>41,47%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,48%</td><td>-6,18%</td><td>-0,68%</td><td>-0,13%</td><td>0,22%</td><td>0,74%</td><td>3,41%</td><td>58,42%</td><td>41,53%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,46%</td><td>-5,91%</td><td>-0,65%</td><td>-0,12%</td><td>0,22%</td><td>0,71%</td><td>3,29%</td><td>58,50%</td><td>41,44%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,45%</td><td>-5,74%</td><td>-0,64%</td><td>-0,12%</td><td>0,21%</td><td>0,69%</td><td>3,13%</td><td>58,47%</td><td>41,47%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,45%</td><td>-5,76%</td><td>-0,63%</td><td>-0,12%</td><td>0,22%</td><td>0,70%</td><td>3,24%</td><td>58,53%</td><td>41,42%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,46%</td><td>-5,87%</td><td>-0,64%</td><td>-0,12%</td><td>0,22%</td><td>0,70%</td><td>3,37%</td><td>58,56%</td><td>41,39%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,45%</td><td>-5,76%</td><td>-0,63%</td><td>-0,12%</td><td>0,22%</td><td>0,70%</td><td>3,29%</td><td>58,14%</td><td>41,81%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>3.600</td><td>0,04%</td><td>0,04%</td><td>0,46%</td><td>-5,95%</td><td>-0,65%</td><td>-0,12%</td><td>0,22%</td><td>0,72%</td><td>3,33%</td><td>58,56%</td><td>41,39%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,36%</td><td>-4,29%</td><td>-0,53%</td><td>-0,07%</td><td>0,17%</td><td>0,59%</td><td>2,37%</td><td>66,52%</td><td>33,45%</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>3.599</td><td>0,04%</td><td>0,04%</td><td>0,40%</td><td>-5,55%</td><td>-0,56%</td><td>-0,05%</td><td>0,15%</td><td>0,62%</td><td>3,01%</td><td>68,96%</td><td>31,01%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>CDI-Only</td><td>benchmark</td><td>Benchmarks</td><td>175</td><td>0,76%</td><td>0,81%</td><td>0,29%</td><td>0,05%</td><td>0,20%</td><td>0,52%</td><td>1,01%</td><td>1,15%</td><td>1,28%</td><td>100,00%</td><td>0,00%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark</td><td>Benchmarks</td><td>175</td><td>0,79%</td><td>0,76%</td><td>2,22%</td><td>-13,12%</td><td>-2,24%</td><td>-0,36%</td><td>1,98%</td><td>3,92%</td><td>7,02%</td><td>72,57%</td><td>27,43%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark</td><td>Benchmarks</td><td>175</td><td>0,73%</td><td>0,70%</td><td>6,11%</td><td>-29,90%</td><td>-8,46%</td><td>-3,07%</td><td>4,75%</td><td>10,42%</td><td>16,97%</td><td>56,00%</td><td>44,00%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,80%</td><td>0,81%</td><td>1,98%</td><td>-13,17%</td><td>-2,31%</td><td>0,27%</td><td>1,76%</td><td>3,89%</td><td>5,49%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,80%</td><td>0,81%</td><td>1,96%</td><td>-12,79%</td><td>-2,34%</td><td>0,29%</td><td>1,74%</td><td>3,91%</td><td>5,29%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,78%</td><td>0,81%</td><td>1,74%</td><td>-11,52%</td><td>-2,06%</td><td>0,42%</td><td>1,64%</td><td>3,39%</td><td>4,90%</td><td>78,86%</td><td>21,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,79%</td><td>0,80%</td><td>2,03%</td><td>-13,40%</td><td>-2,48%</td><td>0,21%</td><td>1,79%</td><td>3,92%</td><td>5,48%</td><td>78,29%</td><td>21,71%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,79%</td><td>0,81%</td><td>2,01%</td><td>-13,67%</td><td>-2,45%</td><td>0,15%</td><td>1,73%</td><td>3,87%</td><td>5,65%</td><td>78,86%</td><td>21,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,78%</td><td>0,82%</td><td>1,50%</td><td>-9,62%</td><td>-1,72%</td><td>0,46%</td><td>1,51%</td><td>3,13%</td><td>3,88%</td><td>80,00%</td><td>20,00%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,79%</td><td>0,84%</td><td>1,72%</td><td>-11,53%</td><td>-2,03%</td><td>0,48%</td><td>1,64%</td><td>3,37%</td><td>4,74%</td><td>80,57%</td><td>19,43%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,78%</td><td>0,84%</td><td>1,76%</td><td>-11,91%</td><td>-2,14%</td><td>0,45%</td><td>1,65%</td><td>3,43%</td><td>4,71%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,79%</td><td>0,86%</td><td>1,74%</td><td>-11,86%</td><td>-1,96%</td><td>0,48%</td><td>1,60%</td><td>3,48%</td><td>4,83%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>175</td><td>0,80%</td><td>0,81%</td><td>1,88%</td><td>-12,74%</td><td>-2,21%</td><td>0,35%</td><td>1,70%</td><td>3,76%</td><td>5,19%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,79%</td><td>0,88%</td><td>2,20%</td><td>-14,82%</td><td>-2,49%</td><td>-0,04%</td><td>2,00%</td><td>3,90%</td><td>5,93%</td><td>74,29%</td><td>25,71%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,79%</td><td>0,87%</td><td>2,20%</td><td>-14,77%</td><td>-2,48%</td><td>-0,03%</td><td>2,01%</td><td>4,16%</td><td>5,93%</td><td>74,86%</td><td>25,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,79%</td><td>0,83%</td><td>2,18%</td><td>-14,81%</td><td>-2,49%</td><td>0,01%</td><td>2,02%</td><td>4,07%</td><td>5,94%</td><td>75,43%</td><td>24,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,78%</td><td>0,79%</td><td>2,21%</td><td>-15,03%</td><td>-2,49%</td><td>-0,04%</td><td>2,03%</td><td>4,07%</td><td>5,83%</td><td>74,86%</td><td>25,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,78%</td><td>0,80%</td><td>2,23%</td><td>-15,35%</td><td>-2,55%</td><td>-0,03%</td><td>2,01%</td><td>4,18%</td><td>5,96%</td><td>74,29%</td><td>25,71%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,77%</td><td>0,82%</td><td>2,12%</td><td>-14,48%</td><td>-2,45%</td><td>0,04%</td><td>1,90%</td><td>4,03%</td><td>5,82%</td><td>75,43%</td><td>24,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,77%</td><td>0,80%</td><td>2,08%</td><td>-14,18%</td><td>-2,34%</td><td>0,04%</td><td>1,91%</td><td>3,85%</td><td>5,77%</td><td>75,43%</td><td>24,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,77%</td><td>0,81%</td><td>2,08%</td><td>-14,23%</td><td>-2,33%</td><td>0,03%</td><td>1,92%</td><td>3,88%</td><td>5,55%</td><td>75,43%</td><td>24,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,77%</td><td>0,80%</td><td>2,11%</td><td>-14,41%</td><td>-2,39%</td><td>0,04%</td><td>1,92%</td><td>3,98%</td><td>5,56%</td><td>75,43%</td><td>24,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,77%</td><td>0,80%</td><td>2,09%</td><td>-14,35%</td><td>-2,38%</td><td>0,00%</td><td>1,91%</td><td>3,94%</td><td>5,52%</td><td>74,86%</td><td>25,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>175</td><td>0,78%</td><td>0,81%</td><td>2,14%</td><td>-14,69%</td><td>-2,44%</td><td>0,00%</td><td>1,98%</td><td>4,06%</td><td>5,83%</td><td>74,86%</td><td>25,14%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>175</td><td>0,78%</td><td>0,80%</td><td>1,71%</td><td>-10,44%</td><td>-2,01%</td><td>0,29%</td><td>1,63%</td><td>3,38%</td><td>4,84%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>175</td><td>0,78%</td><td>0,83%</td><td>1,86%</td><td>-13,47%</td><td>-2,08%</td><td>0,48%</td><td>1,63%</td><td>3,58%</td><td>5,39%</td><td>79,43%</td><td>20,57%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>CDI-Only</td><td>benchmark</td><td>Benchmarks</td><td>15</td><td>9,25%</td><td>9,84%</td><td>3,68%</td><td>2,74%</td><td>3,85%</td><td>6,07%</td><td>12,66%</td><td>13,98%</td><td>14,20%</td><td>100,00%</td><td>0,00%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark</td><td>Benchmarks</td><td>15</td><td>9,51%</td><td>8,23%</td><td>7,69%</td><td>-4,20%</td><td>-1,85%</td><td>5,28%</td><td>15,44%</td><td>20,56%</td><td>24,45%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark</td><td>Benchmarks</td><td>15</td><td>8,05%</td><td>4,97%</td><td>18,89%</td><td>-15,50%</td><td>-13,97%</td><td>-9,66%</td><td>24,40%</td><td>35,45%</td><td>38,93%</td><td>60,00%</td><td>40,00%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,67%</td><td>8,23%</td><td>7,43%</td><td>-2,01%</td><td>-1,04%</td><td>5,18%</td><td>16,08%</td><td>21,63%</td><td>22,20%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,76%</td><td>8,23%</td><td>7,45%</td><td>-1,99%</td><td>-1,27%</td><td>5,25%</td><td>16,41%</td><td>21,64%</td><td>21,70%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,44%</td><td>8,23%</td><td>6,72%</td><td>-1,34%</td><td>-0,52%</td><td>5,88%</td><td>14,95%</td><td>19,61%</td><td>20,95%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,61%</td><td>8,23%</td><td>7,61%</td><td>-2,12%</td><td>-1,38%</td><td>5,00%</td><td>16,48%</td><td>21,85%</td><td>22,16%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,59%</td><td>8,23%</td><td>7,33%</td><td>-2,03%</td><td>-1,29%</td><td>5,48%</td><td>15,61%</td><td>21,25%</td><td>21,87%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #1</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,57%</td><td>8,23%</td><td>6,26%</td><td>-0,02%</td><td>0,63%</td><td>5,66%</td><td>15,28%</td><td>18,15%</td><td>20,67%</td><td>93,33%</td><td>6,67%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #2</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,59%</td><td>8,23%</td><td>6,67%</td><td>-1,05%</td><td>-0,39%</td><td>5,96%</td><td>14,91%</td><td>19,73%</td><td>20,69%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #3</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,51%</td><td>8,23%</td><td>6,95%</td><td>-1,86%</td><td>-0,79%</td><td>5,65%</td><td>15,39%</td><td>19,91%</td><td>20,96%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #4</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,60%</td><td>8,23%</td><td>6,86%</td><td>-1,67%</td><td>-0,49%</td><td>5,63%</td><td>15,07%</td><td>20,35%</td><td>20,43%</td><td>93,33%</td><td>6,67%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #5</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>15</td><td>9,74%</td><td>8,23%</td><td>7,41%</td><td>-1,42%</td><td>-0,80%</td><td>5,53%</td><td>16,37%</td><td>21,27%</td><td>21,36%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,52%</td><td>7,15%</td><td>7,96%</td><td>-2,25%</td><td>-1,52%</td><td>5,54%</td><td>16,85%</td><td>22,21%</td><td>23,72%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,56%</td><td>7,13%</td><td>8,04%</td><td>-3,91%</td><td>-1,75%</td><td>5,42%</td><td>16,67%</td><td>22,23%</td><td>24,12%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,55%</td><td>6,92%</td><td>8,05%</td><td>-3,04%</td><td>-1,73%</td><td>5,45%</td><td>16,84%</td><td>22,51%</td><td>23,98%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,47%</td><td>6,98%</td><td>8,19%</td><td>-2,92%</td><td>-2,02%</td><td>5,32%</td><td>17,00%</td><td>22,62%</td><td>23,84%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,48%</td><td>7,17%</td><td>8,33%</td><td>-3,07%</td><td>-1,97%</td><td>5,06%</td><td>17,06%</td><td>22,80%</td><td>24,20%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,35%</td><td>7,20%</td><td>8,00%</td><td>-3,18%</td><td>-1,82%</td><td>5,15%</td><td>16,66%</td><td>22,09%</td><td>23,20%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,29%</td><td>7,09%</td><td>7,77%</td><td>-2,33%</td><td>-1,21%</td><td>5,38%</td><td>16,46%</td><td>21,65%</td><td>22,84%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,32%</td><td>7,02%</td><td>7,68%</td><td>-2,35%</td><td>-1,09%</td><td>5,31%</td><td>16,31%</td><td>21,55%</td><td>22,81%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,37%</td><td>6,97%</td><td>7,75%</td><td>-3,01%</td><td>-1,26%</td><td>5,37%</td><td>16,28%</td><td>21,77%</td><td>22,95%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,28%</td><td>6,97%</td><td>7,78%</td><td>-2,34%</td><td>-1,44%</td><td>5,34%</td><td>16,46%</td><td>21,73%</td><td>22,55%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>Controles Mensais</td><td>15</td><td>9,43%</td><td>7,15%</td><td>7,86%</td><td>-2,28%</td><td>-1,31%</td><td>5,27%</td><td>16,62%</td><td>22,06%</td><td>22,98%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Capitulação</td><td>estrategia real</td><td>Estratégias Reais</td><td>15</td><td>9,52%</td><td>8,23%</td><td>6,81%</td><td>-1,14%</td><td>-0,44%</td><td>5,89%</td><td>15,33%</td><td>19,12%</td><td>21,90%</td><td>86,67%</td><td>13,33%</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Euforia</td><td>estrategia real</td><td>Estratégias Reais</td><td>15</td><td>9,49%</td><td>8,23%</td><td>6,88%</td><td>-1,71%</td><td>-0,32%</td><td>5,39%</td><td>15,16%</td><td>20,13%</td><td>21,32%</td><td>93,33%</td><td>6,67%</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

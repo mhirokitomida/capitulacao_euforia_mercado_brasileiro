@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concentração por setor</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 14px; }
+
+    .chart-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .chart-subtitle {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(210px, 1fr));
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: #334155;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    select,
+    .multi-button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 0.92rem;
+      text-align: left;
+    }
+
+    .multi-wrap { position: relative; }
+
+    .multi-button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .multi-panel {
+      position: absolute;
+      z-index: 50;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 320px;
+      overflow: auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+      padding: 10px;
+      display: none;
+    }
+
+    .multi-panel.open { display: block; }
+
+    .multi-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .multi-actions button {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 7px 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .multi-option {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 4px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .chart-wrap {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+    }
+
+    #chart {
+      width: 100%;
+      min-height: 680px;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      display: none;
+    }
+
+    @media (max-width: 1050px) {
+      .controls { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .controls { grid-template-columns: 1fr; }
+      #chart { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-title">Concentração por setor</div>
+  <div class="chart-subtitle">Heatmap estratégia × setor. A cor representa valor investido ou a métrica selecionada; o texto resume valor/peso quando disponível.</div>
+
+  <div class="controls">
+    <div class="control-group" id="metricControl">
+      <label>Métrica</label>
+      <select id="metricSelect"></select>
+    </div>
+    <div class="control-group" id="categoryControl">
+      <label>Categoria</label>
+      <div id="categoryMulti" class="multi-wrap"></div>
+    </div>
+    <div class="control-group" id="strategyControl">
+      <label>Estratégias</label>
+      <div id="strategyMulti" class="multi-wrap"></div>
+    </div>
+    <div class="control-group" id="topNControl">
+      <label>Top N colunas</label>
+      <select id="topNSelect">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="30" selected>30</option>
+        <option value="40">40</option>
+        <option value="60">60</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div id="chart"></div>
+    <div id="emptyState" class="empty">Nenhum dado disponível para os filtros selecionados.</div>
+  </div>
+
+  <script>
+    const CONFIG = {"title": "Concentração por setor", "subtitle": "Heatmap estratégia × setor. A cor representa valor investido ou a métrica selecionada; o texto resume valor/peso quando disponível.", "metrics": [{"field": "valor_investido", "label": "Valor investido"}, {"field": "peso_medio", "label": "Peso médio"}, {"field": "peso_maximo", "label": "Peso máximo"}, {"field": "pct_exposicao", "label": "% aportes com exposição"}], "initialMetric": "valor_investido", "categories": ["Aleatórias", "Capitulação", "Euforia"], "strategies": ["Aleatória da Capitulação #1", "Aleatória da Capitulação #2", "Aleatória da Capitulação #3", "Aleatória da Capitulação #4", "Aleatória da Capitulação #5", "Aleatória da Euforia #1", "Aleatória da Euforia #2", "Aleatória da Euforia #3", "Aleatória da Euforia #4", "Aleatória da Euforia #5", "Capitulação", "Euforia"], "topN": 30, "xSort": "value", "xTitle": "Setor", "yTitle": "Estratégia", "data": [{"x": "Bens Industriais", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 23,7 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.672,59<br>Peso médio: 12%<br>Peso máximo: 23%<br>% aportes com exposição: 100%<br>", "valor_investido": 23672.5916, "peso_medio": 0.1183837244598775, "peso_maximo": 0.22609634756212257, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 2,3 mil<br>1,86%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Comunicações<br>Valor investido: R$ 2.267,47<br>Peso médio: 1,86%<br>Peso máximo: 5,33%<br>% aportes com exposição: 61%<br>", "valor_investido": 2267.4718000000003, "peso_medio": 0.018628317320385477, "peso_maximo": 0.05330656319521949, "pct_exposicao": 0.6086956521739131}, {"x": "Consumo Cíclico", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 55,4 mil<br>28%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 55.447,40<br>Peso médio: 28%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 55447.3956, "peso_medio": 0.2772830366364025, "peso_maximo": 0.40012171187048723, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 16,9 mil<br>8,43%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.850,29<br>Peso médio: 8,43%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 16850.2862, "peso_medio": 0.0842649835619867, "peso_maximo": 0.15817338733939082, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 24,9 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Financeiro<br>Valor investido: R$ 24.903,01<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 24903.0098, "peso_medio": 0.12453615949582686, "peso_maximo": 0.16034181979189727, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 14,3 mil<br>7,15%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Materiais Básicos<br>Valor investido: R$ 14.301,77<br>Peso médio: 7,15%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 14301.7678, "peso_medio": 0.07152326873392224, "peso_maximo": 0.13967035887413468, "pct_exposicao": 1.0}, {"x": "Outros", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 55<br>0,63%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Outros<br>Valor investido: R$ 55,09<br>Peso médio: 0,63%<br>Peso máximo: 0,63%<br>% aportes com exposição: 4,35%<br>", "valor_investido": 55.0912, "peso_medio": 0.006336484399498853, "peso_maximo": 0.006336484399498853, "pct_exposicao": 0.043478260869565216}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 6,0 mil<br>3,14%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 5.997,60<br>Peso médio: 3,14%<br>Peso máximo: 4,95%<br>% aportes com exposição: 96%<br>", "valor_investido": 5997.6022, "peso_medio": 0.03135692996793126, "peso_maximo": 0.04951271683859643, "pct_exposicao": 0.9565217391304348}, {"x": "Saúde", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 15,5 mil<br>7,77%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Saúde<br>Valor investido: R$ 15.544,28<br>Peso médio: 7,77%<br>Peso máximo: 12%<br>% aportes com exposição: 100%<br>", "valor_investido": 15544.282, "peso_medio": 0.07773491668437145, "peso_maximo": 0.12414758321108277, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 5,4 mil<br>2,83%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.417,73<br>Peso médio: 2,83%<br>Peso máximo: 4,91%<br>% aportes com exposição: 96%<br>", "valor_investido": 5417.7316, "peso_medio": 0.028325143394766418, "peso_maximo": 0.049081729907117226, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 31,3 mil<br>16%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: Utilidade Pública<br>Valor investido: R$ 31.303,57<br>Peso médio: 16%<br>Peso máximo: 23%<br>% aportes com exposição: 100%<br>", "valor_investido": 31303.5732, "peso_medio": 0.1565456983645345, "peso_maximo": 0.2294420767369085, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Capitulação #1", "estrategia": "Aleatória da Capitulação #1", "categoria": "Aleatórias", "text": "R$ 4,2 mil<br>4,03%", "hover": "Estratégia: Aleatória da Capitulação #1<br>Classificação: não_classificado<br>Valor investido: R$ 4.204,72<br>Peso médio: 4,03%<br>Peso máximo: 7,99%<br>% aportes com exposição: 52%<br>", "valor_investido": 4204.72, "peso_medio": 0.040300861382212845, "peso_maximo": 0.07990468673401384, "pct_exposicao": 0.5217391304347826}, {"x": "Bens Industriais", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 24,0 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Bens Industriais<br>Valor investido: R$ 24.010,02<br>Peso médio: 12%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 24010.0206, "peso_medio": 0.12007004009569053, "peso_maximo": 0.20690794846040356, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 2,5 mil<br>2,08%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Comunicações<br>Valor investido: R$ 2.537,60<br>Peso médio: 2,08%<br>Peso máximo: 6,78%<br>% aportes com exposição: 61%<br>", "valor_investido": 2537.5956, "peso_medio": 0.020848592023441147, "peso_maximo": 0.06777858714224479, "pct_exposicao": 0.6086956521739131}, {"x": "Consumo Cíclico", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 55,3 mil<br>28%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 55.330,85<br>Peso médio: 28%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 55330.8532, "peso_medio": 0.2766959232949993, "peso_maximo": 0.39986110163409866, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 17,3 mil<br>8,67%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 17.339,13<br>Peso médio: 8,67%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 17339.135, "peso_medio": 0.08670863657107664, "peso_maximo": 0.1627872647707319, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 23,9 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Financeiro<br>Valor investido: R$ 23.875,56<br>Peso médio: 12%<br>Peso máximo: 15%<br>% aportes com exposição: 100%<br>", "valor_investido": 23875.5638, "peso_medio": 0.11939697421708892, "peso_maximo": 0.15178120537725504, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 12,3 mil<br>6,42%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Materiais Básicos<br>Valor investido: R$ 12.281,23<br>Peso médio: 6,42%<br>Peso máximo: 13%<br>% aportes com exposição: 96%<br>", "valor_investido": 12281.234400000001, "peso_medio": 0.06420838569999847, "peso_maximo": 0.1327967037640728, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 129<br>0,74%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Outros<br>Valor investido: R$ 129,04<br>Peso médio: 0,74%<br>Peso máximo: 0,81%<br>% aportes com exposição: 8,70%<br>", "valor_investido": 129.036, "peso_medio": 0.007420611486913682, "peso_maximo": 0.008109517968153972, "pct_exposicao": 0.08695652173913043}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 5,7 mil<br>3,28%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 5.706,39<br>Peso médio: 3,28%<br>Peso máximo: 8,20%<br>% aportes com exposição: 87%<br>", "valor_investido": 5706.3864, "peso_medio": 0.032815975936748204, "peso_maximo": 0.08198540470801088, "pct_exposicao": 0.8695652173913043}, {"x": "Saúde", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 15,3 mil<br>7,66%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Saúde<br>Valor investido: R$ 15.314,50<br>Peso médio: 7,66%<br>Peso máximo: 13%<br>% aportes com exposição: 100%<br>", "valor_investido": 15314.5002, "peso_medio": 0.07658455167910923, "peso_maximo": 0.1329549836911568, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 5,9 mil<br>2,97%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.932,82<br>Peso médio: 2,97%<br>Peso máximo: 4,96%<br>% aportes com exposição: 100%<br>", "valor_investido": 5932.8194, "peso_medio": 0.02966853704243934, "peso_maximo": 0.04958768398111721, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 32,9 mil<br>16%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: Utilidade Pública<br>Valor investido: R$ 32.854,32<br>Peso médio: 16%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 32854.3194, "peso_medio": 0.16429631322524169, "peso_maximo": 0.2810350886507806, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Capitulação #2", "estrategia": "Aleatória da Capitulação #2", "categoria": "Aleatórias", "text": "R$ 4,7 mil<br>4,87%", "hover": "Estratégia: Aleatória da Capitulação #2<br>Classificação: não_classificado<br>Valor investido: R$ 4.657,74<br>Peso médio: 4,87%<br>Peso máximo: 8,13%<br>% aportes com exposição: 48%<br>", "valor_investido": 4657.74, "peso_medio": 0.048699275788474244, "peso_maximo": 0.08132921429703964, "pct_exposicao": 0.4782608695652174}, {"x": "Bens Industriais", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 23,9 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.902,83<br>Peso médio: 12%<br>Peso máximo: 19%<br>% aportes com exposição: 100%<br>", "valor_investido": 23902.83, "peso_medio": 0.11953217164623892, "peso_maximo": 0.18897457537700388, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 1,9 mil<br>1,72%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Comunicações<br>Valor investido: R$ 1.949,16<br>Peso médio: 1,72%<br>Peso máximo: 3,82%<br>% aportes com exposição: 57%<br>", "valor_investido": 1949.1644000000001, "peso_medio": 0.017245323304486533, "peso_maximo": 0.038159910431236045, "pct_exposicao": 0.5652173913043478}, {"x": "Consumo Cíclico", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 53,3 mil<br>27%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 53.277,65<br>Peso médio: 27%<br>Peso máximo: 38%<br>% aportes com exposição: 100%<br>", "valor_investido": 53277.6546, "peso_medio": 0.2664298759767382, "peso_maximo": 0.379766402594621, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 16,6 mil<br>8,28%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.557,20<br>Peso médio: 8,28%<br>Peso máximo: 15%<br>% aportes com exposição: 100%<br>", "valor_investido": 16557.2014, "peso_medio": 0.08279951806957028, "peso_maximo": 0.1452560980817377, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 24,7 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Financeiro<br>Valor investido: R$ 24.718,09<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 24718.0898, "peso_medio": 0.12361044463022926, "peso_maximo": 0.15640982221886712, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 14,8 mil<br>7,72%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Materiais Básicos<br>Valor investido: R$ 14.764,62<br>Peso médio: 7,72%<br>Peso máximo: 14%<br>% aportes com exposição: 96%<br>", "valor_investido": 14764.6206, "peso_medio": 0.07719213503261226, "peso_maximo": 0.13742127986341526, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 188<br>1,08%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Outros<br>Valor investido: R$ 187,79<br>Peso médio: 1,08%<br>Peso máximo: 1,30%<br>% aportes com exposição: 8,70%<br>", "valor_investido": 187.7856, "peso_medio": 0.010798245479746234, "peso_maximo": 0.013003580110942521, "pct_exposicao": 0.08695652173913043}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 6,3 mil<br>3,46%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.323,89<br>Peso médio: 3,46%<br>Peso máximo: 7,89%<br>% aportes com exposição: 91%<br>", "valor_investido": 6323.887, "peso_medio": 0.03463635540433865, "peso_maximo": 0.07889004922688321, "pct_exposicao": 0.9130434782608695}, {"x": "Saúde", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 15,6 mil<br>7,78%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Saúde<br>Valor investido: R$ 15.551,61<br>Peso médio: 7,78%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15551.6086, "peso_medio": 0.07777195214349175, "peso_maximo": 0.1369728982134744, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 5,6 mil<br>2,92%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.587,27<br>Peso médio: 2,92%<br>Peso máximo: 4,77%<br>% aportes com exposição: 96%<br>", "valor_investido": 5587.268599999999, "peso_medio": 0.029210022352988065, "peso_maximo": 0.04774976754063047, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 33,2 mil<br>17%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: Utilidade Pública<br>Valor investido: R$ 33.167,03<br>Peso médio: 17%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 33167.0268, "peso_medio": 0.16586302821841506, "peso_maximo": 0.28175220295169945, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Capitulação #3", "estrategia": "Aleatória da Capitulação #3", "categoria": "Aleatórias", "text": "R$ 4,0 mil<br>4,58%", "hover": "Estratégia: Aleatória da Capitulação #3<br>Classificação: não_classificado<br>Valor investido: R$ 3.980,62<br>Peso médio: 4,58%<br>Peso máximo: 8,03%<br>% aportes com exposição: 43%<br>", "valor_investido": 3980.62, "peso_medio": 0.045784259436014434, "peso_maximo": 0.08031265337725545, "pct_exposicao": 0.43478260869565216}, {"x": "Bens Industriais", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 23,3 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.331,66<br>Peso médio: 12%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 23331.6644, "peso_medio": 0.11666918051811556, "peso_maximo": 0.2148276907425839, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 2,3 mil<br>1,68%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Comunicações<br>Valor investido: R$ 2.338,97<br>Peso médio: 1,68%<br>Peso máximo: 3,57%<br>% aportes com exposição: 70%<br>", "valor_investido": 2338.9678, "peso_medio": 0.01681270845670521, "peso_maximo": 0.035701613507572776, "pct_exposicao": 0.6956521739130435}, {"x": "Consumo Cíclico", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 54,8 mil<br>27%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 54.791,00<br>Peso médio: 27%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 54791.0046, "peso_medio": 0.27398436311201335, "peso_maximo": 0.3995826807448116, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 16,4 mil<br>8,19%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.369,59<br>Peso médio: 8,19%<br>Peso máximo: 15%<br>% aportes com exposição: 100%<br>", "valor_investido": 16369.59, "peso_medio": 0.08185670788273533, "peso_maximo": 0.1539420750017664, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 24,4 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Financeiro<br>Valor investido: R$ 24.433,06<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 24433.0608, "peso_medio": 0.12217809573694258, "peso_maximo": 0.16398177385578905, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 15,2 mil<br>7,62%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Materiais Básicos<br>Valor investido: R$ 15.243,31<br>Peso médio: 7,62%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15243.305, "peso_medio": 0.07622559321888936, "peso_maximo": 0.14197549576918028, "pct_exposicao": 1.0}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 6,4 mil<br>3,18%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.350,23<br>Peso médio: 3,18%<br>Peso máximo: 5,55%<br>% aportes com exposição: 100%<br>", "valor_investido": 6350.2338, "peso_medio": 0.03175493031773038, "peso_maximo": 0.05545117594291402, "pct_exposicao": 1.0}, {"x": "Saúde", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 15,1 mil<br>7,56%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Saúde<br>Valor investido: R$ 15.111,56<br>Peso médio: 7,56%<br>Peso máximo: 11%<br>% aportes com exposição: 100%<br>", "valor_investido": 15111.5556, "peso_medio": 0.07556598330207556, "peso_maximo": 0.11393873170293695, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 5,7 mil<br>2,85%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.691,67<br>Peso médio: 2,85%<br>Peso máximo: 4,80%<br>% aportes com exposição: 100%<br>", "valor_investido": 5691.6662, "peso_medio": 0.028461330265140968, "peso_maximo": 0.048017180280662194, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 32,1 mil<br>16%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: Utilidade Pública<br>Valor investido: R$ 32.124,93<br>Peso médio: 16%<br>Peso máximo: 22%<br>% aportes com exposição: 100%<br>", "valor_investido": 32124.9256, "peso_medio": 0.16064144241529407, "peso_maximo": 0.2225921256388516, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Capitulação #4", "estrategia": "Aleatória da Capitulação #4", "categoria": "Aleatórias", "text": "R$ 4,2 mil<br>4,02%", "hover": "Estratégia: Aleatória da Capitulação #4<br>Classificação: não_classificado<br>Valor investido: R$ 4.192,84<br>Peso médio: 4,02%<br>Peso máximo: 8,18%<br>% aportes com exposição: 52%<br>", "valor_investido": 4192.84, "peso_medio": 0.04018593741726353, "peso_maximo": 0.08184274047507574, "pct_exposicao": 0.5217391304347826}, {"x": "Bens Industriais", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 23,9 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.936,84<br>Peso médio: 12%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 23936.8368, "peso_medio": 0.11970265021125572, "peso_maximo": 0.21394502782372465, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 2,1 mil<br>1,73%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Comunicações<br>Valor investido: R$ 2.101,68<br>Peso médio: 1,73%<br>Peso máximo: 2,55%<br>% aportes com exposição: 61%<br>", "valor_investido": 2101.6766, "peso_medio": 0.017266053415169118, "peso_maximo": 0.025483801577557606, "pct_exposicao": 0.6086956521739131}, {"x": "Consumo Cíclico", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 53,2 mil<br>27%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 53.214,39<br>Peso médio: 27%<br>Peso máximo: 33%<br>% aportes com exposição: 100%<br>", "valor_investido": 53214.3872, "peso_medio": 0.2661151008941324, "peso_maximo": 0.3322685978532163, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 16,9 mil<br>8,47%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.933,33<br>Peso médio: 8,47%<br>Peso máximo: 15%<br>% aportes com exposição: 100%<br>", "valor_investido": 16933.3332, "peso_medio": 0.0846799779975266, "peso_maximo": 0.15450232660426194, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 24,4 mil<br>12%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Financeiro<br>Valor investido: R$ 24.389,60<br>Peso médio: 12%<br>Peso máximo: 17%<br>% aportes com exposição: 100%<br>", "valor_investido": 24389.6036, "peso_medio": 0.12196717919077357, "peso_maximo": 0.16962240348312407, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 15,4 mil<br>7,69%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Materiais Básicos<br>Valor investido: R$ 15.386,50<br>Peso médio: 7,69%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15386.4992, "peso_medio": 0.07694422620439254, "peso_maximo": 0.13834008341713339, "pct_exposicao": 1.0}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 6,1 mil<br>3,20%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.130,07<br>Peso médio: 3,20%<br>Peso máximo: 4,92%<br>% aportes com exposição: 96%<br>", "valor_investido": 6130.072, "peso_medio": 0.03204914308526222, "peso_maximo": 0.04919201663053208, "pct_exposicao": 0.9565217391304348}, {"x": "Saúde", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 15,6 mil<br>7,79%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Saúde<br>Valor investido: R$ 15.583,09<br>Peso médio: 7,79%<br>Peso máximo: 12%<br>% aportes com exposição: 100%<br>", "valor_investido": 15583.091, "peso_medio": 0.07792899360057501, "peso_maximo": 0.12111802792263755, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 6,0 mil<br>3,01%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 6.015,49<br>Peso médio: 3,01%<br>Peso máximo: 5,74%<br>% aportes com exposição: 100%<br>", "valor_investido": 6015.4902, "peso_medio": 0.030082287265904686, "peso_maximo": 0.057409572373627954, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 32,4 mil<br>16%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: Utilidade Pública<br>Valor investido: R$ 32.365,83<br>Peso médio: 16%<br>Peso máximo: 22%<br>% aportes com exposição: 100%<br>", "valor_investido": 32365.83, "peso_medio": 0.16185729061130508, "peso_maximo": 0.21806539948824177, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Capitulação #5", "estrategia": "Aleatória da Capitulação #5", "categoria": "Aleatórias", "text": "R$ 3,9 mil<br>3,75%", "hover": "Estratégia: Aleatória da Capitulação #5<br>Classificação: não_classificado<br>Valor investido: R$ 3.910,82<br>Peso médio: 3,75%<br>Peso máximo: 6,12%<br>% aportes com exposição: 52%<br>", "valor_investido": 3910.82, "peso_medio": 0.03748390557224623, "peso_maximo": 0.06123455318028422, "pct_exposicao": 0.5217391304347826}, {"x": "Bens Industriais", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 25,9 mil<br>13%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Bens Industriais<br>Valor investido: R$ 25.933,76<br>Peso médio: 13%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 25933.762600000002, "peso_medio": 0.12969271855096406, "peso_maximo": 0.2113108477419673, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 3,3 mil<br>2,10%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Comunicações<br>Valor investido: R$ 3.280,01<br>Peso médio: 2,10%<br>Peso máximo: 5,24%<br>% aportes com exposição: 78%<br>", "valor_investido": 3280.0086, "peso_medio": 0.020959423133292424, "peso_maximo": 0.05235366905247403, "pct_exposicao": 0.782608695652174}, {"x": "Consumo Cíclico", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 53,5 mil<br>27%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 53.488,92<br>Peso médio: 27%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 53488.922, "peso_medio": 0.2674867224060852, "peso_maximo": 0.3980418787723139, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 16,7 mil<br>8,37%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.735,54<br>Peso médio: 8,37%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 16735.540399999998, "peso_medio": 0.08369133378307116, "peso_maximo": 0.16130836524297326, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 23,9 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Financeiro<br>Valor investido: R$ 23.896,25<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 23896.2462, "peso_medio": 0.11950014961375106, "peso_maximo": 0.1648254956887024, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 14,7 mil<br>7,71%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Materiais Básicos<br>Valor investido: R$ 14.747,77<br>Peso médio: 7,71%<br>Peso máximo: 14%<br>% aportes com exposição: 96%<br>", "valor_investido": 14747.7676, "peso_medio": 0.07710476082271031, "peso_maximo": 0.14301336908913118, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 182<br>0,70%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Outros<br>Valor investido: R$ 182,27<br>Peso médio: 0,70%<br>Peso máximo: 0,83%<br>% aportes com exposição: 13%<br>", "valor_investido": 182.2728, "peso_medio": 0.006988597855860098, "peso_maximo": 0.008279264439902212, "pct_exposicao": 0.13043478260869565}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 6,1 mil<br>3,68%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.074,61<br>Peso médio: 3,68%<br>Peso máximo: 7,97%<br>% aportes com exposição: 83%<br>", "valor_investido": 6074.6056, "peso_medio": 0.03677288603259536, "peso_maximo": 0.07974475373632829, "pct_exposicao": 0.8260869565217391}, {"x": "Saúde", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 14,2 mil<br>7,09%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Saúde<br>Valor investido: R$ 14.173,84<br>Peso médio: 7,09%<br>Peso máximo: 13%<br>% aportes com exposição: 100%<br>", "valor_investido": 14173.8356, "peso_medio": 0.07087991469510736, "peso_maximo": 0.1326985690682141, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 6,5 mil<br>3,26%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 6.522,10<br>Peso médio: 3,26%<br>Peso máximo: 5,87%<br>% aportes com exposição: 100%<br>", "valor_investido": 6522.0962, "peso_medio": 0.032615912208417704, "peso_maximo": 0.05867075288532836, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 31,5 mil<br>16%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: Utilidade Pública<br>Valor investido: R$ 31.539,70<br>Peso médio: 16%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 31539.699200000003, "peso_medio": 0.15772447061769157, "peso_maximo": 0.2830885492331152, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Euforia #1", "estrategia": "Aleatória da Euforia #1", "categoria": "Aleatórias", "text": "R$ 3,4 mil<br>4,88%", "hover": "Estratégia: Aleatória da Euforia #1<br>Classificação: não_classificado<br>Valor investido: R$ 3.392,54<br>Peso médio: 4,88%<br>Peso máximo: 7,53%<br>% aportes com exposição: 35%<br>", "valor_investido": 3392.54, "peso_medio": 0.0487721142733988, "peso_maximo": 0.07532694350092804, "pct_exposicao": 0.34782608695652173}, {"x": "Bens Industriais", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 22,9 mil<br>11%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Bens Industriais<br>Valor investido: R$ 22.907,15<br>Peso médio: 11%<br>Peso máximo: 22%<br>% aportes com exposição: 100%<br>", "valor_investido": 22907.1532, "peso_medio": 0.11455112773683415, "peso_maximo": 0.21849387236109347, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 2,6 mil<br>1,88%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Comunicações<br>Valor investido: R$ 2.611,90<br>Peso médio: 1,88%<br>Peso máximo: 4,58%<br>% aportes com exposição: 70%<br>", "valor_investido": 2611.8986, "peso_medio": 0.018775517221738584, "peso_maximo": 0.04579937471362509, "pct_exposicao": 0.6956521739130435}, {"x": "Consumo Cíclico", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 51,7 mil<br>26%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 51.718,56<br>Peso médio: 26%<br>Peso máximo: 32%<br>% aportes com exposição: 100%<br>", "valor_investido": 51718.5646, "peso_medio": 0.25862481117033725, "peso_maximo": 0.3233835366457373, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 16,7 mil<br>8,34%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.687,29<br>Peso médio: 8,34%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 16687.2868, "peso_medio": 0.08344722499386319, "peso_maximo": 0.14456524937550264, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 24,9 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Financeiro<br>Valor investido: R$ 24.934,94<br>Peso médio: 12%<br>Peso máximo: 17%<br>% aportes com exposição: 100%<br>", "valor_investido": 24934.9446, "peso_medio": 0.12469027835035826, "peso_maximo": 0.1669221481761464, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 16,7 mil<br>8,74%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Materiais Básicos<br>Valor investido: R$ 16.722,92<br>Peso médio: 8,74%<br>Peso máximo: 14%<br>% aportes com exposição: 96%<br>", "valor_investido": 16722.9202, "peso_medio": 0.08742491568035705, "peso_maximo": 0.1374962531669667, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 183<br>1,06%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Outros<br>Valor investido: R$ 183,50<br>Peso médio: 1,06%<br>Peso máximo: 1,43%<br>% aportes com exposição: 8,70%<br>", "valor_investido": 183.4966, "peso_medio": 0.010552895584081075, "peso_maximo": 0.01428606198881031, "pct_exposicao": 0.08695652173913043}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 6,5 mil<br>3,55%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.484,89<br>Peso médio: 3,55%<br>Peso máximo: 5,54%<br>% aportes com exposição: 91%<br>", "valor_investido": 6484.892400000001, "peso_medio": 0.035516470358069804, "peso_maximo": 0.055438122692004536, "pct_exposicao": 0.9130434782608695}, {"x": "Saúde", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 15,6 mil<br>7,81%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Saúde<br>Valor investido: R$ 15.608,19<br>Peso médio: 7,81%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15608.190200000001, "peso_medio": 0.07805180224550319, "peso_maximo": 0.1382070028137322, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 5,5 mil<br>2,89%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.537,30<br>Peso médio: 2,89%<br>Peso máximo: 4,73%<br>% aportes com exposição: 96%<br>", "valor_investido": 5537.3002, "peso_medio": 0.028948530963064375, "peso_maximo": 0.04733986397775462, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 33,3 mil<br>17%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: Utilidade Pública<br>Valor investido: R$ 33.284,05<br>Peso médio: 17%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 33284.0506, "peso_medio": 0.1664422429858826, "peso_maximo": 0.281706010549868, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Euforia #2", "estrategia": "Aleatória da Euforia #2", "categoria": "Aleatórias", "text": "R$ 3,3 mil<br>3,79%", "hover": "Estratégia: Aleatória da Euforia #2<br>Classificação: não_classificado<br>Valor investido: R$ 3.294,04<br>Peso médio: 3,79%<br>Peso máximo: 6,16%<br>% aportes com exposição: 43%<br>", "valor_investido": 3294.04, "peso_medio": 0.037885201750537514, "peso_maximo": 0.06161099607089279, "pct_exposicao": 0.43478260869565216}, {"x": "Bens Industriais", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 23,8 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.830,53<br>Peso médio: 12%<br>Peso máximo: 19%<br>% aportes com exposição: 100%<br>", "valor_investido": 23830.5294, "peso_medio": 0.11917073132721005, "peso_maximo": 0.187813784096094, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 2,4 mil<br>1,73%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Comunicações<br>Valor investido: R$ 2.402,42<br>Peso médio: 1,73%<br>Peso máximo: 3,56%<br>% aportes com exposição: 70%<br>", "valor_investido": 2402.4193999999998, "peso_medio": 0.01727096772281527, "peso_maximo": 0.035620755645897735, "pct_exposicao": 0.6956521739130435}, {"x": "Consumo Cíclico", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 54,8 mil<br>27%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 54.785,18<br>Peso médio: 27%<br>Peso máximo: 38%<br>% aportes com exposição: 100%<br>", "valor_investido": 54785.1782, "peso_medio": 0.27396690673485274, "peso_maximo": 0.3756291379883216, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 16,7 mil<br>8,36%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.713,14<br>Peso médio: 8,36%<br>Peso máximo: 11%<br>% aportes com exposição: 100%<br>", "valor_investido": 16713.1426, "peso_medio": 0.08357782445752805, "peso_maximo": 0.11265318190729522, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 25,5 mil<br>13%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Financeiro<br>Valor investido: R$ 25.495,01<br>Peso médio: 13%<br>Peso máximo: 17%<br>% aportes com exposição: 100%<br>", "valor_investido": 25495.010000000002, "peso_medio": 0.1274955294971511, "peso_maximo": 0.16805839516124674, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 15,7 mil<br>7,87%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Materiais Básicos<br>Valor investido: R$ 15.732,52<br>Peso médio: 7,87%<br>Peso máximo: 13%<br>% aportes com exposição: 100%<br>", "valor_investido": 15732.5162, "peso_medio": 0.0786741658448783, "peso_maximo": 0.1273287035655824, "pct_exposicao": 1.0}, {"x": "Outros", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 201<br>0,77%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Outros<br>Valor investido: R$ 201,36<br>Peso médio: 0,77%<br>Peso máximo: 0,86%<br>% aportes com exposição: 13%<br>", "valor_investido": 201.3578, "peso_medio": 0.00771959701026713, "peso_maximo": 0.008552306784139593, "pct_exposicao": 0.13043478260869565}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 6,4 mil<br>3,37%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.441,03<br>Peso médio: 3,37%<br>Peso máximo: 8,88%<br>% aportes com exposição: 96%<br>", "valor_investido": 6441.0318, "peso_medio": 0.033674268295427585, "peso_maximo": 0.08881851647873852, "pct_exposicao": 0.9565217391304348}, {"x": "Saúde", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 15,1 mil<br>7,57%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Saúde<br>Valor investido: R$ 15.142,63<br>Peso médio: 7,57%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15142.6316, "peso_medio": 0.07572592300288675, "peso_maximo": 0.13824799696928622, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 5,9 mil<br>2,94%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.883,35<br>Peso médio: 2,94%<br>Peso máximo: 4,86%<br>% aportes com exposição: 100%<br>", "valor_investido": 5883.3516, "peso_medio": 0.029420756988947024, "peso_maximo": 0.04860025345697114, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 30,1 mil<br>15%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: Utilidade Pública<br>Valor investido: R$ 30.066,88<br>Peso médio: 15%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 30066.875, "peso_medio": 0.15035806913278, "peso_maximo": 0.21481414701975343, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Euforia #3", "estrategia": "Aleatória da Euforia #3", "categoria": "Aleatórias", "text": "R$ 3,3 mil<br>4,19%", "hover": "Estratégia: Aleatória da Euforia #3<br>Classificação: não_classificado<br>Valor investido: R$ 3.275,34<br>Peso médio: 4,19%<br>Peso máximo: 6,46%<br>% aportes com exposição: 39%<br>", "valor_investido": 3275.34, "peso_medio": 0.041855995802373966, "peso_maximo": 0.0645508582791599, "pct_exposicao": 0.391304347826087}, {"x": "Bens Industriais", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 23,2 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Bens Industriais<br>Valor investido: R$ 23.233,37<br>Peso médio: 12%<br>Peso máximo: 22%<br>% aportes com exposição: 100%<br>", "valor_investido": 23233.3676, "peso_medio": 0.11618916209465936, "peso_maximo": 0.21544590337891026, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 3,0 mil<br>2,14%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Comunicações<br>Valor investido: R$ 2.982,14<br>Peso médio: 2,14%<br>Peso máximo: 7,12%<br>% aportes com exposição: 70%<br>", "valor_investido": 2982.1422000000002, "peso_medio": 0.0214382592066678, "peso_maximo": 0.07123314235041829, "pct_exposicao": 0.6956521739130435}, {"x": "Consumo Cíclico", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 53,2 mil<br>27%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 53.187,55<br>Peso médio: 27%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 53187.5496, "peso_medio": 0.265992080501677, "peso_maximo": 0.4035387490925416, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 17,3 mil<br>8,65%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 17.303,30<br>Peso médio: 8,65%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 17303.3042, "peso_medio": 0.08653256619601338, "peso_maximo": 0.15793647733994592, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 23,3 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Financeiro<br>Valor investido: R$ 23.313,19<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 23313.1924, "peso_medio": 0.11658930514309433, "peso_maximo": 0.15891999236836377, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 15,1 mil<br>7,88%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Materiais Básicos<br>Valor investido: R$ 15.079,07<br>Peso médio: 7,88%<br>Peso máximo: 13%<br>% aportes com exposição: 96%<br>", "valor_investido": 15079.0696, "peso_medio": 0.07883883060844026, "peso_maximo": 0.1304391301334462, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 290<br>1,11%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Outros<br>Valor investido: R$ 289,66<br>Peso médio: 1,11%<br>Peso máximo: 1,39%<br>% aportes com exposição: 13%<br>", "valor_investido": 289.6572, "peso_medio": 0.011106532534126254, "peso_maximo": 0.013921248848443025, "pct_exposicao": 0.13043478260869565}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 6,2 mil<br>3,39%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.196,85<br>Peso médio: 3,39%<br>Peso máximo: 5,09%<br>% aportes com exposição: 91%<br>", "valor_investido": 6196.8518, "peso_medio": 0.03394191044025946, "peso_maximo": 0.050875519526608154, "pct_exposicao": 0.9130434782608695}, {"x": "Saúde", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 15,5 mil<br>7,74%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Saúde<br>Valor investido: R$ 15.473,73<br>Peso médio: 7,74%<br>Peso máximo: 13%<br>% aportes com exposição: 100%<br>", "valor_investido": 15473.7272, "peso_medio": 0.07738377172287103, "peso_maximo": 0.13213472375522103, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 6,2 mil<br>3,25%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 6.210,66<br>Peso médio: 3,25%<br>Peso máximo: 5,53%<br>% aportes com exposição: 96%<br>", "valor_investido": 6210.6622, "peso_medio": 0.032470566837192925, "peso_maximo": 0.05528577004773053, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 32,8 mil<br>16%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: Utilidade Pública<br>Valor investido: R$ 32.833,56<br>Peso médio: 16%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 32833.5556, "peso_medio": 0.16419981937725572, "peso_maximo": 0.28245049161305885, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Euforia #4", "estrategia": "Aleatória da Euforia #4", "categoria": "Aleatórias", "text": "R$ 3,9 mil<br>4,03%", "hover": "Estratégia: Aleatória da Euforia #4<br>Classificação: não_classificado<br>Valor investido: R$ 3.857,44<br>Peso médio: 4,03%<br>Peso máximo: 6,48%<br>% aportes com exposição: 48%<br>", "valor_investido": 3857.44, "peso_medio": 0.04033519783849359, "peso_maximo": 0.06479237683697259, "pct_exposicao": 0.4782608695652174}, {"x": "Bens Industriais", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 24,5 mil<br>12%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Bens Industriais<br>Valor investido: R$ 24.468,01<br>Peso médio: 12%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 24468.0108, "peso_medio": 0.12236403422917488, "peso_maximo": 0.21297905888947757, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 2,4 mil<br>1,76%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Comunicações<br>Valor investido: R$ 2.447,28<br>Peso médio: 1,76%<br>Peso máximo: 3,86%<br>% aportes com exposição: 70%<br>", "valor_investido": 2447.2814, "peso_medio": 0.017593339985910637, "peso_maximo": 0.038594331003323934, "pct_exposicao": 0.6956521739130435}, {"x": "Consumo Cíclico", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 54,8 mil<br>27%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 54.774,82<br>Peso médio: 27%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 54774.816, "peso_medio": 0.2739242899499474, "peso_maximo": 0.4016202797305118, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 16,4 mil<br>8,22%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.442,30<br>Peso médio: 8,22%<br>Peso máximo: 15%<br>% aportes com exposição: 100%<br>", "valor_investido": 16442.3042, "peso_medio": 0.08222695385354016, "peso_maximo": 0.1497411332620752, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 25,3 mil<br>13%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Financeiro<br>Valor investido: R$ 25.304,94<br>Peso médio: 13%<br>Peso máximo: 17%<br>% aportes com exposição: 100%<br>", "valor_investido": 25304.9358, "peso_medio": 0.12654810539461722, "peso_maximo": 0.16722190095569242, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 14,0 mil<br>7,34%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Materiais Básicos<br>Valor investido: R$ 14.044,37<br>Peso médio: 7,34%<br>Peso máximo: 14%<br>% aportes com exposição: 96%<br>", "valor_investido": 14044.3706, "peso_medio": 0.07342786254990198, "peso_maximo": 0.1355651221697506, "pct_exposicao": 0.9565217391304348}, {"x": "Outros", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 198<br>1,14%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Outros<br>Valor investido: R$ 197,61<br>Peso médio: 1,14%<br>Peso máximo: 1,40%<br>% aportes com exposição: 8,70%<br>", "valor_investido": 197.61360000000002, "peso_medio": 0.011365054845380107, "peso_maximo": 0.013996469365296691, "pct_exposicao": 0.08695652173913043}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 6,2 mil<br>3,56%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.181,74<br>Peso médio: 3,56%<br>Peso máximo: 8,06%<br>% aportes com exposição: 87%<br>", "valor_investido": 6181.742, "peso_medio": 0.03555154990792218, "peso_maximo": 0.08063223451411966, "pct_exposicao": 0.8695652173913043}, {"x": "Saúde", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 13,9 mil<br>6,94%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Saúde<br>Valor investido: R$ 13.871,85<br>Peso médio: 6,94%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 13871.8544, "peso_medio": 0.06937312383368555, "peso_maximo": 0.13656301721008285, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 6,5 mil<br>3,40%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 6.496,69<br>Peso médio: 3,40%<br>Peso máximo: 5,26%<br>% aportes com exposição: 96%<br>", "valor_investido": 6496.6878, "peso_medio": 0.033965878691441846, "peso_maximo": 0.052589870204831794, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 31,2 mil<br>16%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: Utilidade Pública<br>Valor investido: R$ 31.238,83<br>Peso médio: 16%<br>Peso máximo: 28%<br>% aportes com exposição: 100%<br>", "valor_investido": 31238.834, "peso_medio": 0.1562246445786823, "peso_maximo": 0.28209867028264146, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Aleatória da Euforia #5", "estrategia": "Aleatória da Euforia #5", "categoria": "Aleatórias", "text": "R$ 4,5 mil<br>5,17%", "hover": "Estratégia: Aleatória da Euforia #5<br>Classificação: não_classificado<br>Valor investido: R$ 4.493,94<br>Peso médio: 5,17%<br>Peso máximo: 7,99%<br>% aportes com exposição: 43%<br>", "valor_investido": 4493.94, "peso_medio": 0.05168766527547688, "peso_maximo": 0.07990468673401384, "pct_exposicao": 0.43478260869565216}, {"x": "Bens Industriais", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 26,7 mil<br>13%", "hover": "Estratégia: Capitulação<br>Classificação: Bens Industriais<br>Valor investido: R$ 26.701,47<br>Peso médio: 13%<br>Peso máximo: 18%<br>% aportes com exposição: 100%<br>", "valor_investido": 26701.4706, "peso_medio": 0.1335316522691276, "peso_maximo": 0.18269046223601926, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 3,4 mil<br>2,05%", "hover": "Estratégia: Capitulação<br>Classificação: Comunicações<br>Valor investido: R$ 3.388,26<br>Peso médio: 2,05%<br>Peso máximo: 6,75%<br>% aportes com exposição: 83%<br>", "valor_investido": 3388.2556, "peso_medio": 0.020511519857372096, "peso_maximo": 0.06749501280135259, "pct_exposicao": 0.8260869565217391}, {"x": "Consumo Cíclico", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 52,7 mil<br>26%", "hover": "Estratégia: Capitulação<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 52.746,74<br>Peso médio: 26%<br>Peso máximo: 38%<br>% aportes com exposição: 100%<br>", "valor_investido": 52746.739199999996, "peso_medio": 0.2637824567428693, "peso_maximo": 0.37890510877211286, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 16,6 mil<br>8,32%", "hover": "Estratégia: Capitulação<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.629,07<br>Peso médio: 8,32%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 16629.0668, "peso_medio": 0.08315957539748746, "peso_maximo": 0.16335703771696566, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 24,1 mil<br>12%", "hover": "Estratégia: Capitulação<br>Classificação: Financeiro<br>Valor investido: R$ 24.080,70<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 24080.6994, "peso_medio": 0.12042650514938386, "peso_maximo": 0.1561867182146485, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 16,9 mil<br>8,47%", "hover": "Estratégia: Capitulação<br>Classificação: Materiais Básicos<br>Valor investido: R$ 16.939,57<br>Peso médio: 8,47%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 16939.5666, "peso_medio": 0.08471495653157193, "peso_maximo": 0.14307097895287502, "pct_exposicao": 1.0}, {"x": "Outros", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 181<br>0,70%", "hover": "Estratégia: Capitulação<br>Classificação: Outros<br>Valor investido: R$ 181,44<br>Peso médio: 0,70%<br>Peso máximo: 0,79%<br>% aportes com exposição: 13%<br>", "valor_investido": 181.4388, "peso_medio": 0.006955904543522812, "peso_maximo": 0.007868816983483986, "pct_exposicao": 0.13043478260869565}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 6,3 mil<br>3,31%", "hover": "Estratégia: Capitulação<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.334,03<br>Peso médio: 3,31%<br>Peso máximo: 8,15%<br>% aportes com exposição: 96%<br>", "valor_investido": 6334.0268, "peso_medio": 0.033115551332852274, "peso_maximo": 0.08152346126371413, "pct_exposicao": 0.9565217391304348}, {"x": "Saúde", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 14,7 mil<br>7,36%", "hover": "Estratégia: Capitulação<br>Classificação: Saúde<br>Valor investido: R$ 14.710,94<br>Peso médio: 7,36%<br>Peso máximo: 12%<br>% aportes com exposição: 100%<br>", "valor_investido": 14710.9352, "peso_medio": 0.07356906160298982, "peso_maximo": 0.1179715117339775, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 5,6 mil<br>2,93%", "hover": "Estratégia: Capitulação<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.612,12<br>Peso médio: 2,93%<br>Peso máximo: 5,37%<br>% aportes com exposição: 96%<br>", "valor_investido": 5612.1174, "peso_medio": 0.029340893095252243, "peso_maximo": 0.053693423225389995, "pct_exposicao": 0.9565217391304348}, {"x": "Utilidade Pública", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 30,0 mil<br>15%", "hover": "Estratégia: Capitulação<br>Classificação: Utilidade Pública<br>Valor investido: R$ 29.956,10<br>Peso médio: 15%<br>Peso máximo: 23%<br>% aportes com exposição: 100%<br>", "valor_investido": 29956.1014, "peso_medio": 0.14980882677511326, "peso_maximo": 0.22907638925673707, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Capitulação", "estrategia": "Capitulação", "categoria": "Capitulação", "text": "R$ 2,7 mil<br>3,86%", "hover": "Estratégia: Capitulação<br>Classificação: não_classificado<br>Valor investido: R$ 2.682,46<br>Peso médio: 3,86%<br>Peso máximo: 6,35%<br>% aportes com exposição: 35%<br>", "valor_investido": 2682.46, "peso_medio": 0.03856647986057099, "peso_maximo": 0.06346840819267842, "pct_exposicao": 0.34782608695652173}, {"x": "Bens Industriais", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 21,9 mil<br>11%", "hover": "Estratégia: Euforia<br>Classificação: Bens Industriais<br>Valor investido: R$ 21.918,06<br>Peso médio: 11%<br>Peso máximo: 21%<br>% aportes com exposição: 100%<br>", "valor_investido": 21918.063, "peso_medio": 0.10961200271655445, "peso_maximo": 0.2103124289798213, "pct_exposicao": 1.0}, {"x": "Comunicações", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 2,0 mil<br>1,79%", "hover": "Estratégia: Euforia<br>Classificação: Comunicações<br>Valor investido: R$ 2.022,76<br>Peso médio: 1,79%<br>Peso máximo: 4,54%<br>% aportes com exposição: 57%<br>", "valor_investido": 2022.7567999999999, "peso_medio": 0.017898210401343154, "peso_maximo": 0.04535809748623063, "pct_exposicao": 0.5652173913043478}, {"x": "Consumo Cíclico", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 56,9 mil<br>28%", "hover": "Estratégia: Euforia<br>Classificação: Consumo Cíclico<br>Valor investido: R$ 56.892,24<br>Peso médio: 28%<br>Peso máximo: 40%<br>% aportes com exposição: 100%<br>", "valor_investido": 56892.2428, "peso_medio": 0.2845112690902978, "peso_maximo": 0.39853431230158876, "pct_exposicao": 1.0}, {"x": "Consumo não Cíclico", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 16,7 mil<br>8,36%", "hover": "Estratégia: Euforia<br>Classificação: Consumo não Cíclico<br>Valor investido: R$ 16.710,09<br>Peso médio: 8,36%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 16710.0936, "peso_medio": 0.08356451969338004, "peso_maximo": 0.16078841755972745, "pct_exposicao": 1.0}, {"x": "Financeiro", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 24,5 mil<br>12%", "hover": "Estratégia: Euforia<br>Classificação: Financeiro<br>Valor investido: R$ 24.517,75<br>Peso médio: 12%<br>Peso máximo: 16%<br>% aportes com exposição: 100%<br>", "valor_investido": 24517.7536, "peso_medio": 0.12261131545836639, "peso_maximo": 0.16326622241115837, "pct_exposicao": 1.0}, {"x": "Materiais Básicos", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 14,0 mil<br>7,01%", "hover": "Estratégia: Euforia<br>Classificação: Materiais Básicos<br>Valor investido: R$ 14.024,13<br>Peso médio: 7,01%<br>Peso máximo: 13%<br>% aportes com exposição: 100%<br>", "valor_investido": 14024.1268, "peso_medio": 0.07013237431471812, "peso_maximo": 0.12595918156494568, "pct_exposicao": 1.0}, {"x": "Outros", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 123<br>1,41%", "hover": "Estratégia: Euforia<br>Classificação: Outros<br>Valor investido: R$ 122,60<br>Peso médio: 1,41%<br>Peso máximo: 1,41%<br>% aportes com exposição: 4,35%<br>", "valor_investido": 122.6, "peso_medio": 0.014106284061901044, "peso_maximo": 0.014106284061901044, "pct_exposicao": 0.043478260869565216}, {"x": "Petróleo, Gás e Biocombustíveis", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 6,1 mil<br>3,35%", "hover": "Estratégia: Euforia<br>Classificação: Petróleo, Gás e Biocombustíveis<br>Valor investido: R$ 6.111,15<br>Peso médio: 3,35%<br>Peso máximo: 5,18%<br>% aportes com exposição: 91%<br>", "valor_investido": 6111.1464, "peso_medio": 0.033471466829363264, "peso_maximo": 0.05180055983361165, "pct_exposicao": 0.9130434782608695}, {"x": "Saúde", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 15,3 mil<br>7,67%", "hover": "Estratégia: Euforia<br>Classificação: Saúde<br>Valor investido: R$ 15.333,70<br>Peso médio: 7,67%<br>Peso máximo: 14%<br>% aportes com exposição: 100%<br>", "valor_investido": 15333.7034, "peso_medio": 0.07668355730459724, "peso_maximo": 0.13674875789679716, "pct_exposicao": 1.0}, {"x": "Tecnologia da Informação", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 5,8 mil<br>2,88%", "hover": "Estratégia: Euforia<br>Classificação: Tecnologia da Informação<br>Valor investido: R$ 5.757,64<br>Peso médio: 2,88%<br>Peso máximo: 4,87%<br>% aportes com exposição: 100%<br>", "valor_investido": 5757.6412, "peso_medio": 0.028792781313828366, "peso_maximo": 0.048670065910129026, "pct_exposicao": 1.0}, {"x": "Utilidade Pública", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 32,1 mil<br>16%", "hover": "Estratégia: Euforia<br>Classificação: Utilidade Pública<br>Valor investido: R$ 32.120,15<br>Peso médio: 16%<br>Peso máximo: 22%<br>% aportes com exposição: 100%<br>", "valor_investido": 32120.1486, "peso_medio": 0.1606279883232737, "peso_maximo": 0.21552063449020428, "pct_exposicao": 1.0}, {"x": "não_classificado", "y": "Euforia", "estrategia": "Euforia", "categoria": "Euforia", "text": "R$ 4,4 mil<br>4,25%", "hover": "Estratégia: Euforia<br>Classificação: não_classificado<br>Valor investido: R$ 4.434,44<br>Peso médio: 4,25%<br>Peso máximo: 7,47%<br>% aportes com exposição: 52%<br>", "valor_investido": 4434.4400000000005, "peso_medio": 0.04249938236321991, "peso_maximo": 0.07474969479182302, "pct_exposicao": 0.5217391304347826}]};
+    const DATA = CONFIG.data || [];
+    const METRICS = CONFIG.metrics || [];
+
+    const chart = document.getElementById("chart");
+    const emptyState = document.getElementById("emptyState");
+    const metricSelect = document.getElementById("metricSelect");
+    const topNSelect = document.getElementById("topNSelect");
+    const metricControl = document.getElementById("metricControl");
+
+    let selectedCategories = new Set(CONFIG.categories || []);
+    let selectedStrategies = new Set(CONFIG.strategies || []);
+
+    function toNumber(v) {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr.filter(x => x !== null && x !== undefined && x !== "")));
+    }
+
+    function makeOptions(select, items) {
+      select.innerHTML = "";
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.value || item;
+        opt.textContent = item.label || item;
+        select.appendChild(opt);
+      });
+    }
+
+    function buildMulti(rootId, items, selectedSet, labelAll, onChange) {
+      const root = document.getElementById(rootId);
+      root.innerHTML = "";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "multi-button";
+
+      const label = document.createElement("span");
+      const arrow = document.createElement("span");
+      arrow.textContent = "▾";
+      button.appendChild(label);
+      button.appendChild(arrow);
+
+      const panel = document.createElement("div");
+      panel.className = "multi-panel";
+
+      const actions = document.createElement("div");
+      actions.className = "multi-actions";
+
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.textContent = "Selecionar tudo";
+
+      const noneBtn = document.createElement("button");
+      noneBtn.type = "button";
+      noneBtn.textContent = "Deselecionar tudo";
+
+      actions.appendChild(allBtn);
+      actions.appendChild(noneBtn);
+      panel.appendChild(actions);
+
+      const updateLabel = () => {
+        if (selectedSet.size === 0) label.textContent = "Nenhum item";
+        else if (selectedSet.size === items.length) label.textContent = labelAll;
+        else label.textContent = `${selectedSet.size} selecionado(s)`;
+      };
+
+      const renderChecks = () => {
+        panel.querySelectorAll(".multi-option").forEach(el => el.remove());
+        items.forEach(item => {
+          const row = document.createElement("label");
+          row.className = "multi-option";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = selectedSet.has(item);
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) selectedSet.add(item);
+            else selectedSet.delete(item);
+            updateLabel();
+            onChange();
+          });
+
+          const txt = document.createElement("span");
+          txt.textContent = item;
+
+          row.appendChild(checkbox);
+          row.appendChild(txt);
+          panel.appendChild(row);
+        });
+      };
+
+      allBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        items.forEach(item => selectedSet.add(item));
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      noneBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".multi-panel.open").forEach(p => {
+          if (p !== panel) p.classList.remove("open");
+        });
+        panel.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (ev) => {
+        if (!root.contains(ev.target)) panel.classList.remove("open");
+      });
+
+      root.appendChild(button);
+      root.appendChild(panel);
+      renderChecks();
+      updateLabel();
+    }
+
+    function metricLabel(field) {
+      const found = METRICS.find(m => m.field === field);
+      return found ? found.label : field;
+    }
+
+    function activeMetric() {
+      return metricSelect.value || CONFIG.initialMetric;
+    }
+
+    function filteredRows(metric) {
+      return DATA.filter(row => {
+        if (selectedCategories.size && !selectedCategories.has(String(row.categoria))) return false;
+        if (selectedStrategies.size && !selectedStrategies.has(String(row.estrategia))) return false;
+        return toNumber(row[metric]) !== null;
+      });
+    }
+
+    function selectedXValues(rows, metric) {
+      const totals = new Map();
+      rows.forEach(row => {
+        const x = String(row.x || "");
+        const value = toNumber(row[metric]);
+        if (!x || value === null) return;
+        totals.set(x, (totals.get(x) || 0) + Math.abs(value));
+      });
+
+      let xs = Array.from(totals.keys());
+      if (CONFIG.xSort === "numeric") {
+        xs.sort((a, b) => Number(a) - Number(b));
+      } else if (CONFIG.xSort === "text" || CONFIG.xSort === "date") {
+        xs.sort((a, b) => String(a).localeCompare(String(b)));
+      } else {
+        xs.sort((a, b) => (totals.get(b) || 0) - (totals.get(a) || 0));
+        const topN = Number(topNSelect.value) || CONFIG.topN || 30;
+        xs = xs.slice(0, topN);
+      }
+      return xs;
+    }
+
+    function render() {
+      const metric = activeMetric();
+      const rows = filteredRows(metric);
+      const xs = selectedXValues(rows, metric);
+      const ys = unique(rows.map(r => String(r.y || ""))).sort();
+
+      const z = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? toNumber(row[metric]) : null;
+      }));
+
+      const text = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? (row.text || "") : "";
+      }));
+
+      const custom = ys.map(y => xs.map(x => {
+        const row = rows.find(r => String(r.y) === y && String(r.x) === x);
+        return row ? (row.hover || "") : "";
+      }));
+
+      emptyState.style.display = rows.length === 0 || xs.length === 0 || ys.length === 0 ? "block" : "none";
+
+      const trace = {
+        type: "heatmap",
+        x: xs,
+        y: ys,
+        z: z,
+        text: text,
+        texttemplate: "%{text}",
+        textfont: { size: 10 },
+        customdata: custom,
+        colorscale: "Blues",
+        colorbar: { title: metricLabel(metric) },
+        hovertemplate: "%{customdata}<extra></extra>",
+        zsmooth: false
+      };
+
+      const layout = {
+        title: { text: CONFIG.title, x: 0.02, xanchor: "left", y: 0.98, yanchor: "top" },
+        margin: { l: Math.max(285, 155 + Math.min(260, Math.max(...ys.map(y => String(y).length)) * 5)), r: 58, t: 82, b: 150 },
+        height: Math.max(650, Math.min(1150, 95 + ys.length * 48 + xs.length * 6)),
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        xaxis: { title: { text: CONFIG.xTitle || "", standoff: 14 }, automargin: true, tickangle: -45, tickfont: { size: xs.length > 18 ? 10 : 11 } },
+        yaxis: { title: { text: CONFIG.yTitle || "", standoff: 30 }, automargin: true, tickfont: { size: ys.length > 18 ? 10 : 11 } },
+      };
+
+      Plotly.react(chart, [trace], layout, {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ["lasso2d", "select2d"]
+      });
+    }
+
+    function init() {
+      if (METRICS.length <= 1) {
+        metricControl.style.display = "none";
+      } else {
+        makeOptions(metricSelect, METRICS.map(m => ({ value: m.field, label: m.label })));
+        metricSelect.value = CONFIG.initialMetric;
+        metricSelect.addEventListener("change", render);
+      }
+
+      if (CONFIG.xSort === "numeric") {
+        document.getElementById("topNControl").style.display = "none";
+      }
+
+      buildMulti("categoryMulti", CONFIG.categories || [], selectedCategories, "Todas as categorias", render);
+      buildMulti("strategyMulti", CONFIG.strategies || [], selectedStrategies, "Todas as estratégias", render);
+      topNSelect.addEventListener("change", render);
+
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

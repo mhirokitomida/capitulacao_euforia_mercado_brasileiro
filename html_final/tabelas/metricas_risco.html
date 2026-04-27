@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Métricas de risco</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Métricas de risco</div>
+  <div class="table-subtitle">Resumo de risco das estratégias.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Frequência (2)</th><th data-col='2'>Estratégia</th><th data-col='3'>Família</th><th data-col='4'>Categoria</th><th data-col='5'>Grupo</th><th data-col='6'>Grupo (2)</th><th data-col='7'>Sharpe</th><th data-col='8'>Sortino</th><th data-col='9'>Calmar</th><th data-col='10'>Estrategia id</th><th data-col='11'>Ordem grupo html</th><th data-col='12'>Flag estrategia real</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>diaria</td><td>Diária</td><td>Capitulação</td><td>Capitulação</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>0,0190</td><td>0,0254</td><td>0,61</td><td>Capitulação</td><td>1</td><td>1</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Euforia</td><td>Euforia</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>0,0124</td><td>0,0162</td><td>0,48</td><td>Euforia</td><td>1</td><td>1</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>CDI-Only</td><td>benchmark CDI</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,1492</td><td>-2,5633</td><td></td><td>CDI-Only</td><td>2</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>0,0052</td><td>0,0070</td><td>0,43</td><td>Ibovespaespaespaespaespa Aportes Mensais</td><td>2</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,1185</td><td>-0,1637</td><td>0,14</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>2</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>0,0043</td><td>0,0057</td><td>0,44</td><td>acoes Aleatórias 20 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>0,0087</td><td>0,0116</td><td>0,44</td><td>acoes Aleatórias 20 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>0,0074</td><td>0,0098</td><td>0,44</td><td>acoes Aleatórias 20 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0045</td><td>-0,0059</td><td>0,43</td><td>acoes Aleatórias 20 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0040</td><td>-0,0053</td><td>0,42</td><td>acoes Aleatórias 20 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0201</td><td>-0,0266</td><td>0,44</td><td>acoes Aleatórias 30 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0261</td><td>-0,0345</td><td>0,45</td><td>acoes Aleatórias 30 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0215</td><td>-0,0285</td><td>0,45</td><td>acoes Aleatórias 30 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0153</td><td>-0,0202</td><td>0,44</td><td>acoes Aleatórias 30 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0284</td><td>-0,0376</td><td>0,44</td><td>acoes Aleatórias 30 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0064</td><td>-0,0085</td><td>0,44</td><td>acoes elegiveis Aportes Mensais</td><td>3</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #1</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0331</td><td>0,0440</td><td>0,49</td><td>Aleatória Capitulação replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #2</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0474</td><td>0,0632</td><td>0,51</td><td>Aleatória Capitulação replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #3</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0052</td><td>0,0069</td><td>0,55</td><td>Aleatória Capitulação replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #4</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0229</td><td>0,0304</td><td>0,48</td><td>Aleatória Capitulação replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Capitulação #5</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0218</td><td>0,0288</td><td>0,47</td><td>Aleatória Capitulação replica 5</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #1</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0384</td><td>0,0510</td><td>0,68</td><td>Aleatória Euforia replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #2</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0331</td><td>0,0437</td><td>0,56</td><td>Aleatória Euforia replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #3</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0161</td><td>0,0212</td><td>0,54</td><td>Aleatória Euforia replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #4</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0318</td><td>0,0420</td><td>0,55</td><td>Aleatória Euforia replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>diaria</td><td>Diária</td><td>Aleatória da Euforia #5</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0473</td><td>0,0627</td><td>0,52</td><td>Aleatória Euforia replica 5</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Capitulação</td><td>Capitulação</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>0,0049</td><td>0,0064</td><td>0,79</td><td>Capitulação</td><td>1</td><td>1</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Euforia</td><td>Euforia</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>-0,0002</td><td>-0,0002</td><td>0,60</td><td>Euforia</td><td>1</td><td>1</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>CDI-Only</td><td>benchmark CDI</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,1102</td><td>-1,8498</td><td></td><td>CDI-Only</td><td>2</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,0050</td><td>-0,0067</td><td>0,57</td><td>Ibovespaespaespaespaespa Aportes Mensais</td><td>2</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,1353</td><td>-0,1854</td><td>0,18</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>2</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0063</td><td>-0,0080</td><td>0,56</td><td>acoes Aleatórias 20 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0018</td><td>-0,0023</td><td>0,56</td><td>acoes Aleatórias 20 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0032</td><td>-0,0041</td><td>0,55</td><td>acoes Aleatórias 20 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0149</td><td>-0,0190</td><td>0,54</td><td>acoes Aleatórias 20 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0143</td><td>-0,0181</td><td>0,53</td><td>acoes Aleatórias 20 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0308</td><td>-0,0392</td><td>0,56</td><td>acoes Aleatórias 30 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0369</td><td>-0,0469</td><td>0,57</td><td>acoes Aleatórias 30 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0324</td><td>-0,0412</td><td>0,57</td><td>acoes Aleatórias 30 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0262</td><td>-0,0333</td><td>0,56</td><td>acoes Aleatórias 30 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0391</td><td>-0,0497</td><td>0,56</td><td>acoes Aleatórias 30 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0173</td><td>-0,0220</td><td>0,56</td><td>acoes elegiveis Aportes Mensais</td><td>3</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #1</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0210</td><td>0,0269</td><td>0,63</td><td>Aleatória Capitulação replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #2</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0350</td><td>0,0451</td><td>0,65</td><td>Aleatória Capitulação replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #3</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>-0,0081</td><td>-0,0104</td><td>0,70</td><td>Aleatória Capitulação replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #4</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0110</td><td>0,0140</td><td>0,61</td><td>Aleatória Capitulação replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Capitulação #5</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0101</td><td>0,0129</td><td>0,61</td><td>Aleatória Capitulação replica 5</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #1</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0220</td><td>0,0283</td><td>0,86</td><td>Aleatória Euforia replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #2</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0191</td><td>0,0242</td><td>0,71</td><td>Aleatória Euforia replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #3</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0025</td><td>0,0032</td><td>0,69</td><td>Aleatória Euforia replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #4</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0178</td><td>0,0225</td><td>0,69</td><td>Aleatória Euforia replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>mensal</td><td>Mensal</td><td>Aleatória da Euforia #5</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0336</td><td>0,0429</td><td>0,66</td><td>Aleatória Euforia replica 5</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Capitulação</td><td>Capitulação</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>0,0043</td><td>0,0078</td><td>8,45</td><td>Capitulação</td><td>1</td><td>1</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Euforia</td><td>Euforia</td><td>nao classificada</td><td>estrategia real</td><td>Estratégias Reais</td><td>-0,0002</td><td>-0,0003</td><td>5,61</td><td>Euforia</td><td>1</td><td>1</td></tr>
+<tr><td>anual</td><td>Anual</td><td>CDI-Only</td><td>benchmark CDI</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,0305</td><td>-0,7844</td><td></td><td>CDI-Only</td><td>2</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Ibovespaespaespaespaespa Aportes Mensais (Carteira 1)</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,0050</td><td>-0,0090</td><td>2,28</td><td>Ibovespaespaespaespaespa Aportes Mensais</td><td>2</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>benchmark Ibovespaespaespaespaespa</td><td>nao classificada</td><td>benchmark</td><td>Benchmarks</td><td>-0,1515</td><td>-0,2240</td><td>0,23</td><td>Ibovespaespaespaespaespa Buy and Hold</td><td>2</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0060</td><td>-0,0109</td><td>4,25</td><td>acoes Aleatórias 20 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0017</td><td>-0,0031</td><td>2,46</td><td>acoes Aleatórias 20 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0030</td><td>-0,0054</td><td>3,16</td><td>acoes Aleatórias 20 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0139</td><td>-0,0248</td><td>3,26</td><td>acoes Aleatórias 20 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0133</td><td>-0,0238</td><td>3,10</td><td>acoes Aleatórias 20 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0283</td><td>-0,0493</td><td>2,95</td><td>acoes Aleatórias 30 Aportes Mensais carteira 1</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0342</td><td>-0,0606</td><td>4,02</td><td>acoes Aleatórias 30 Aportes Mensais carteira 2</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0305</td><td>-0,0539</td><td>4,00</td><td>acoes Aleatórias 30 Aportes Mensais carteira 3</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0246</td><td>-0,0435</td><td>3,13</td><td>acoes Aleatórias 30 Aportes Mensais carteira 4</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>controle aleatorio</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0365</td><td>-0,0640</td><td>3,99</td><td>acoes Aleatórias 30 Aportes Mensais carteira 5</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>controle Mensal</td><td>nao classificada</td><td>controle Mensal</td><td>Controles Mensais</td><td>-0,0162</td><td>-0,0291</td><td>4,17</td><td>acoes elegiveis Aportes Mensais</td><td>3</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #1</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0195</td><td>0,0356</td><td>4,85</td><td>Aleatória Capitulação replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #2</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0318</td><td>0,0586</td><td>4,96</td><td>Aleatória Capitulação replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #3</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>-0,0073</td><td>-0,0135</td><td>7,14</td><td>Aleatória Capitulação replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #4</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0102</td><td>0,0184</td><td>4,58</td><td>Aleatória Capitulação replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Capitulação #5</td><td>Capitulação</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0096</td><td>0,0173</td><td>4,77</td><td>Aleatória Capitulação replica 5</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #1</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0183</td><td>0,0357</td><td>553,19</td><td>Aleatória Euforia replica 1</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #2</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0171</td><td>0,0320</td><td>9,31</td><td>Aleatória Euforia replica 2</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #3</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0022</td><td>0,0041</td><td>5,18</td><td>Aleatória Euforia replica 3</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #4</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0156</td><td>0,0297</td><td>5,83</td><td>Aleatória Euforia replica 4</td><td>4</td><td>0</td></tr>
+<tr><td>anual</td><td>Anual</td><td>Aleatória da Euforia #5</td><td>Euforia</td><td>nao classificada</td><td>controle aleatorio</td><td>Controles Aleatórios</td><td>0,0295</td><td>0,0575</td><td>6,94</td><td>Aleatória Euforia replica 5</td><td>4</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

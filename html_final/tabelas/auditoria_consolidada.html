@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoria consolidada</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Auditoria consolidada</div>
+  <div class="table-subtitle">Resumo das auditorias finais para rastreabilidade.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Status</th><th data-col='1'>Observacao</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>OK</td><td>A base temporal de sinais deve conter ao menos um registro.</td></tr>
+<tr><td>OK</td><td>A estratégia de capitulação deve ter sinais finais registrados.</td></tr>
+<tr><td>OK</td><td>A estratégia de euforia deve ter sinais finais registrados.</td></tr>
+<tr><td>OK</td><td>Não deve haver datas inválidas na base temporal de sinais.</td></tr>
+<tr><td>OK</td><td>Não deve haver duplicidade por estratégia de referência e data de sinal.</td></tr>
+<tr><td>OK</td><td>Sinais sem regime de mercado associado devem ser avaliados manualmente.</td></tr>
+<tr><td>OK</td><td>A distribuição temporal deve cobrir ao menos um ano de análise.</td></tr>
+<tr><td>OK</td><td>A classificação de regime deve identificar ao menos um regime de mercado.</td></tr>
+<tr><td>OK</td><td>A distribuição anual deve conter uma linha por estratégia e ano observado.</td></tr>
+<tr><td>OK</td><td>A distribuição mensal deve conter uma linha por estratégia e mês observado.</td></tr>
+<tr><td>OK</td><td>A distribuição por mês calendário deve conter 12 linhas por estratégia.</td></tr>
+<tr><td>OK</td><td>A distribuição por regime deve conter uma linha por estratégia e regime observado.</td></tr>
+<tr><td>OK</td><td>A base de timeline deve preservar uma linha por sinal.</td></tr>
+<tr><td>OK</td><td>A base de intensidade deve preservar uma linha por sinal final da 12.1.</td></tr>
+<tr><td>OK</td><td>A base deve conter sinais de capitulação e euforia.</td></tr>
+<tr><td>OK</td><td>Não deve haver datas inválidas nos sinais finais.</td></tr>
+<tr><td>OK</td><td>Não deve haver duplicidade por estratégia de referência e data de sinal.</td></tr>
+<tr><td>OK</td><td>As quatro métricas centrais de amplitude devem ser identificadas na base 5.5.</td></tr>
+<tr><td>OK</td><td>Todos os sinais finais devem receber os indicadores de amplitude da respectiva data.</td></tr>
+<tr><td>OK</td><td>Todos os sinais devem receber score de intensidade coerente com o tipo de sinal.</td></tr>
+<tr><td>OK</td><td>Todos os sinais devem receber percentil de intensidade.</td></tr>
+<tr><td>OK</td><td>O resumo por estratégia deve conter uma linha por estratégia de sinal.</td></tr>
+<tr><td>OK</td><td>O ranking de intensidade deve preservar uma linha por sinal.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A base deve conter compras das estratégias de capitulação e euforia.</td></tr>
+<tr><td>OK</td><td>Quantidade de aportes de capitulação e euforia identificados na base 10.1.</td></tr>
+<tr><td>OK</td><td>Cada aporte de sinal deve possuir pelo menos uma compra efetiva associada.</td></tr>
+<tr><td>OK</td><td>Não deve haver aporte de sinal sem compras finais registradas.</td></tr>
+<tr><td>OK</td><td>Toda compra deve estar vinculada a um ticker.</td></tr>
+<tr><td>OK</td><td>Toda compra deve estar vinculada a um issuer_code.</td></tr>
+<tr><td>OK</td><td>Toda compra deve possuir valor investido calculável.</td></tr>
+<tr><td>OK</td><td>Compras finais devem ter valor investido positivo.</td></tr>
+<tr><td>OK</td><td>Após a consolidação, cada combinação de aporte e ticker deve aparecer uma única vez.</td></tr>
+<tr><td>OK</td><td>Todo aporte consolidado deve possuir data efetiva de aporte.</td></tr>
+<tr><td>OK</td><td>Apenas os aportes reais de Capitulação e Euforia devem herdar a intensidade calculada na 12.2.</td></tr>
+<tr><td>OK</td><td>Controles aleatórios não possuem intensidade própria de sinal e são mantidos como informação complementar.</td></tr>
+<tr><td>OK</td><td>O valor investido total por aporte não deve superar o valor de referência do aporte, salvo diferença residual irrelevante.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Quantidade de aportes identificados na base 12.3 de perfil por aporte.</td></tr>
+<tr><td>OK</td><td>A concentração por empresa deve preservar os aportes consolidados na 12.3.</td></tr>
+<tr><td>OK</td><td>A base deve manter as estratégias de referência de capitulação e euforia.</td></tr>
+<tr><td>OK</td><td>Quantidade de nomes de estratégia incluindo estratégias reais e controles aleatórios.</td></tr>
+<tr><td>OK</td><td>Toda exposição por empresa deve possuir issuer_code.</td></tr>
+<tr><td>OK</td><td>A concentração empresarial não deve depender de empresas não classificadas.</td></tr>
+<tr><td>OK</td><td>Cada combinação de aporte e empresa deve aparecer uma única vez após agregação.</td></tr>
+<tr><td>OK</td><td>Todo aporte consolidado deve possuir data efetiva de aporte.</td></tr>
+<tr><td>OK</td><td>Todo aporte deve possuir pelo menos uma empresa com exposição.</td></tr>
+<tr><td>OK</td><td>As exposições por empresa devem ter valor investido positivo.</td></tr>
+<tr><td>OK</td><td>A soma dos pesos por empresa dentro de cada aporte deve ser próxima de 100%.</td></tr>
+<tr><td>OK</td><td>Maior desvio absoluto da soma dos pesos empresariais por aporte.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Quantidade de aportes identificados na base 12.3 de perfil por aporte.</td></tr>
+<tr><td>OK</td><td>A base setorial deve preservar os aportes consolidados na 12.3.</td></tr>
+<tr><td>OK</td><td>A base deve manter as estratégias de referência de capitulação e euforia.</td></tr>
+<tr><td>OK</td><td>O nível setor deve preservar todos os aportes válidos.</td></tr>
+<tr><td>OK</td><td>O nível subsetor deve preservar todos os aportes válidos.</td></tr>
+<tr><td>OK</td><td>O nível segmento deve preservar todos os aportes válidos.</td></tr>
+<tr><td>OK</td><td>Quantidade de setores distintos após padronização.</td></tr>
+<tr><td>OK</td><td>Subsetores são identificados pela chave hierárquica setor &gt; subsetor.</td></tr>
+<tr><td>OK</td><td>Segmentos são identificados pela chave hierárquica setor &gt; subsetor &gt; segmento.</td></tr>
+<tr><td>OK</td><td>Nomes repetidos de subsetor são tratados pela chave hierárquica completa.</td></tr>
+<tr><td>OK</td><td>Nomes repetidos de segmento são tratados pela chave hierárquica completa.</td></tr>
+<tr><td>OK</td><td>Toda chave de subsetor deve seguir o padrão setor &gt; subsetor.</td></tr>
+<tr><td>OK</td><td>Toda chave de segmento deve seguir o padrão setor &gt; subsetor &gt; segmento.</td></tr>
+<tr><td>OK</td><td>Quantidade de linhas com setor não classificado na base de compras.</td></tr>
+<tr><td>OK</td><td>Quantidade de linhas com subsetor não classificado na base de compras.</td></tr>
+<tr><td>OK</td><td>Quantidade de linhas com segmento não classificado na base de compras.</td></tr>
+<tr><td>OK</td><td>Cada combinação de nível, aporte e classificação hierárquica deve aparecer uma única vez após agregação.</td></tr>
+<tr><td>OK</td><td>As exposições por classificação setorial devem ter valor investido positivo.</td></tr>
+<tr><td>OK</td><td>A soma dos pesos por nível de classificação dentro de cada aporte deve ser próxima de 100%.</td></tr>
+<tr><td>OK</td><td>Maior desvio absoluto da soma dos pesos setoriais por nível e aporte.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A sensibilidade deve contemplar Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>Todos os cenários de cooldown definidos para a subetapa devem ser gerados.</td></tr>
+<tr><td>OK</td><td>Quantidade de candidatos brutos antes do cooldown para Capitulação.</td></tr>
+<tr><td>OK</td><td>Quantidade de candidatos brutos antes do cooldown para Euforia.</td></tr>
+<tr><td>OK</td><td>Todos os sinais aceitos por cenário de cooldown devem possuir data válida.</td></tr>
+<tr><td>OK</td><td>Cada combinação de estratégia, cooldown e data deve aparecer uma única vez.</td></tr>
+<tr><td>OK</td><td>Compara a quantidade de sinais recalculada no cooldown de referência com o calendário oficial da 6.4.</td></tr>
+<tr><td>OK</td><td>Indica se foi possível calcular retorno forward do Ibovespa como proxy de timing pós-sinal.</td></tr>
+<tr><td>OK</td><td>Origem da série usada no cálculo de retorno forward pós-sinal.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Quantidade de linhas na base de liquidez por ticker/data da 3.2.</td></tr>
+<tr><td>OK</td><td>Quantidade de datas disponíveis na base de liquidez por ticker/data.</td></tr>
+<tr><td>OK</td><td>Quantidade de tickers disponíveis na base de liquidez por ticker/data.</td></tr>
+<tr><td>OK</td><td>A sensibilidade exige ao menos uma métrica operacional de liquidez.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar cenários flexíveis, referência e rigorosos.</td></tr>
+<tr><td>OK</td><td>Cada cenário de liquidez deve possuir uma flag na base ticker/data.</td></tr>
+<tr><td>OK</td><td>Cenários alternativos de liquidez não devem ficar vazios por limiar operacional inviável.</td></tr>
+<tr><td>OK</td><td>A referência oficial de liquidez deve possuir ativos elegíveis.</td></tr>
+<tr><td>OK</td><td>Origem usada para construir a elegibilidade de referência.</td></tr>
+<tr><td>OK</td><td>Datas de sinais deveriam possuir cobertura de liquidez para cálculo de impacto.</td></tr>
+<tr><td>OK</td><td>Compras sem lookup exato de liquidez na data/ticker; item informativo para análise operacional.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Quantidade de linhas na base de elegibilidade contábil por janela da 4.4.</td></tr>
+<tr><td>OK</td><td>A base de cenários contábeis deve possuir linhas válidas.</td></tr>
+<tr><td>OK</td><td>A sensibilidade do filtro contábil exige métricas contábeis suficientes para diferenciar cenários.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar cenários flexíveis, referência e rigorosos.</td></tr>
+<tr><td>OK</td><td>Cenários alternativos do filtro contábil não devem ficar vazios por desenho inviável.</td></tr>
+<tr><td>OK</td><td>Cenários rigorosos devem ser subconjuntos da referência oficial para preservar a interpretação ordinal.</td></tr>
+<tr><td>OK</td><td>A referência oficial do filtro contábil deve possuir empresas elegíveis.</td></tr>
+<tr><td>OK</td><td>Origem usada para construir a referência oficial do filtro contábil.</td></tr>
+<tr><td>OK</td><td>Datas de sinais deveriam possuir cobertura contábil para cálculo de impacto.</td></tr>
+<tr><td>OK</td><td>Compras não mantidas pela referência contábil; item informativo, pois a cesta também depende de regras operacionais e calendário.</td></tr>
+<tr><td>OK</td><td>Duplicidades por empresa/janela são informativas, pois podem refletir diferentes tickers ou períodos contábeis equivalentes.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A sensibilidade exige ao menos uma métrica central de capitulação identificada na base 5.5.</td></tr>
+<tr><td>OK</td><td>Quantidade de candidatos brutos oficiais antes do cooldown para Capitulação.</td></tr>
+<tr><td>OK</td><td>Quantidade de sinais finais oficiais de Capitulação no calendário da 6.4.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar cenários flexíveis, referência e rigorosos.</td></tr>
+<tr><td>OK</td><td>Cenários alternativos de limiar não devem ficar sem sinais após cooldown.</td></tr>
+<tr><td>OK</td><td>Todos os sinais aceitos por cenário de limiar devem possuir data válida.</td></tr>
+<tr><td>OK</td><td>Cada combinação de cenário e data deve aparecer uma única vez após tratamento.</td></tr>
+<tr><td>OK</td><td>Compara a quantidade recalculada no cenário de referência com o calendário oficial da 6.4.</td></tr>
+<tr><td>OK</td><td>Indica se foi possível calcular retorno forward do Ibovespa como proxy de timing pós-sinal.</td></tr>
+<tr><td>OK</td><td>Origem da série usada no cálculo de retorno forward pós-sinal.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A sensibilidade exige ao menos uma métrica central de euforia identificada na base 5.5.</td></tr>
+<tr><td>OK</td><td>Quantidade de candidatos brutos oficiais antes do cooldown para Euforia.</td></tr>
+<tr><td>OK</td><td>Quantidade de sinais finais oficiais de Euforia no calendário da 6.4.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar cenários flexíveis, referência e rigorosos.</td></tr>
+<tr><td>OK</td><td>Cenários alternativos de limiar não devem ficar sem sinais após cooldown.</td></tr>
+<tr><td>OK</td><td>Todos os sinais aceitos por cenário de limiar devem possuir data válida.</td></tr>
+<tr><td>OK</td><td>Cada combinação de cenário e data deve aparecer uma única vez após tratamento.</td></tr>
+<tr><td>OK</td><td>Compara a quantidade recalculada no cenário de referência com o calendário oficial da 6.4.</td></tr>
+<tr><td>OK</td><td>Indica se foi possível calcular retorno forward do Ibovespa como proxy de timing pós-sinal.</td></tr>
+<tr><td>OK</td><td>Origem da série usada no cálculo de retorno forward pós-sinal.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve identificar comparações com estratégias aleatórias a partir das bases multifrequência da 11.6.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia nas comparações aleatórias.</td></tr>
+<tr><td>OK</td><td>A sensibilidade deve preservar as visões diária, mensal e anual geradas na 11.6.</td></tr>
+<tr><td>OK</td><td>A análise de robustez exige mais de uma réplica aleatória por família de controle.</td></tr>
+<tr><td>OK</td><td>Cada combinação de estratégia e frequência deve ter réplicas suficientes para avaliar estabilidade.</td></tr>
+<tr><td>OK</td><td>A análise deve gerar cenários por número de réplicas incluídas para medir estabilidade dos controles aleatórios.</td></tr>
+<tr><td>OK</td><td>A análise leave-one-out deve medir a influência de cada réplica aleatória.</td></tr>
+<tr><td>OK</td><td>Duplicidades aqui podem ocorrer se uma réplica aparecer em múltiplos grupos de comparação; item informativo.</td></tr>
+<tr><td>OK</td><td>Indica se a base original de calendários aleatórios da 7.5 foi encontrada para auditoria complementar.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar um posicionamento final com todas as réplicas disponíveis por estratégia e frequência.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve identificar controles mensais nas bases multifrequência da 11.6.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia nas comparações contra controles mensais.</td></tr>
+<tr><td>OK</td><td>A sensibilidade deve preservar as visões diária, mensal e anual geradas na 11.6.</td></tr>
+<tr><td>OK</td><td>A análise exige mais de um controle mensal para avaliar estabilidade.</td></tr>
+<tr><td>OK</td><td>A subetapa deve identificar ao menos um tipo de controle mensal.</td></tr>
+<tr><td>OK</td><td>Cada combinação de estratégia e frequência deve ter controles mensais suficientes para avaliação comparativa.</td></tr>
+<tr><td>OK</td><td>A análise deve gerar cenários por tipo e por subamostra progressiva de controles mensais.</td></tr>
+<tr><td>OK</td><td>A análise deve gerar cenários de estabilidade excluindo tipos e controles individuais.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar posicionamento final com todos os controles mensais disponíveis por estratégia e frequência.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar uma visão temporal dos controles mensais para o HTML final.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A preparação deve gerar base pareada contra Ibovespa e CDI a partir da Etapa 11.5.</td></tr>
+<tr><td>OK</td><td>A preparação deve gerar base pareada contra controles aleatórios e mensais a partir da Etapa 11.6.</td></tr>
+<tr><td>OK</td><td>A base consolidada é o insumo principal das subetapas 14.2 a 14.8.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A preparação deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir porque será a principal para inferência estatística.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada como análise complementar.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise descritiva e exploratória.</td></tr>
+<tr><td>OK</td><td>Devem existir comparações contra Ibovespa e CDI.</td></tr>
+<tr><td>OK</td><td>A base deve preservar comparações contra estratégias aleatórias.</td></tr>
+<tr><td>OK</td><td>A base deve preservar comparações contra estratégias mensais de controle.</td></tr>
+<tr><td>OK</td><td>A base deve preservar a comparação direta entre Capitulação e Euforia preparada na 11.7.</td></tr>
+<tr><td>OK</td><td>Cada comparação deve ter no máximo uma linha por frequência e período.</td></tr>
+<tr><td>OK</td><td>As séries preparadas para inferência não devem conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar a base pareada de benchmarks preparada na 14.1.</td></tr>
+<tr><td>OK</td><td>Espera-se 2 estratégias x 2 benchmarks x 3 frequências.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Ibovespa e CDI.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como referência principal dos testes formais.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada como análise complementar.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise exploratória.</td></tr>
+<tr><td>OK</td><td>O teste binomial de sinal deve ser calculado para as comparações aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de Wilcoxon pareado deve ser calculado para as comparações aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de permutação pareado deve ser calculado para as comparações aplicáveis.</td></tr>
+<tr><td>OK</td><td>A base de testes não deve conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>Cada comparação deve ter no máximo uma linha por frequência e período.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar comparações pareadas contra controles aleatórios preparadas na 14.1.</td></tr>
+<tr><td>OK</td><td>Espera-se 2 estratégias x 5 réplicas aleatórias x 3 frequências.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como referência principal dos testes formais.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada como análise complementar.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise exploratória.</td></tr>
+<tr><td>OK</td><td>Cada estratégia e frequência deve preservar ao menos cinco réplicas aleatórias.</td></tr>
+<tr><td>OK</td><td>O teste binomial de sinal deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de Wilcoxon pareado deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de permutação pareado deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar posicionamento empírico das estratégias reais frente às réplicas aleatórias.</td></tr>
+<tr><td>OK</td><td>Cada comparação deve ter no máximo uma linha por frequência e período.</td></tr>
+<tr><td>OK</td><td>A base de testes não deve conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar comparações pareadas contra controles mensais preparadas na 14.1.</td></tr>
+<tr><td>OK</td><td>Espera-se múltiplos controles mensais para 2 estratégias e 3 frequências.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A subetapa deve separar os diferentes tipos de controle mensal.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como referência principal dos testes formais.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada como análise complementar.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise exploratória.</td></tr>
+<tr><td>OK</td><td>Cada estratégia e frequência deve preservar múltiplos controles mensais.</td></tr>
+<tr><td>OK</td><td>O teste binomial de sinal deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de Wilcoxon pareado deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de permutação pareado deve ser calculado para os pares aplicáveis.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar teste complementar por grupos de controles mensais.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar posicionamento empírico das estratégias reais frente aos controles mensais.</td></tr>
+<tr><td>OK</td><td>Cada comparação deve ter no máximo uma linha por frequência e período.</td></tr>
+<tr><td>OK</td><td>A base de testes não deve conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar a comparação direta preparada na 14.1 a partir da 11.7.</td></tr>
+<tr><td>OK</td><td>Espera-se uma comparação direta por frequência: diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como referência principal dos testes formais.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada como análise complementar.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise exploratória.</td></tr>
+<tr><td>OK</td><td>O teste binomial de sinal deve ser calculado para as frequências aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de Wilcoxon pareado deve ser calculado para as frequências aplicáveis.</td></tr>
+<tr><td>OK</td><td>O teste de permutação pareado deve ser calculado para as frequências aplicáveis.</td></tr>
+<tr><td>OK</td><td>Cada frequência deve ter no máximo uma linha por período.</td></tr>
+<tr><td>OK</td><td>A base de testes não deve conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar a base consolidada de inferência preparada na 14.1.</td></tr>
+<tr><td>OK</td><td>A base deve preservar benchmarks, controles aleatórios, controles mensais e comparação direta.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como referência principal para inferência.</td></tr>
+<tr><td>OK</td><td>A visão diária deve ser preservada com bootstrap por blocos.</td></tr>
+<tr><td>OK</td><td>A visão anual deve ser preservada como análise exploratória.</td></tr>
+<tr><td>OK</td><td>O bootstrap deve incluir a comparação direta entre Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>Ao menos uma comparação deve ter bootstrap calculado.</td></tr>
+<tr><td>OK</td><td>Comparações com poucas observações podem ser mantidas apenas de forma descritiva.</td></tr>
+<tr><td>OK</td><td>A base de amostras deve ter n_bootstrap linhas por comparação calculada.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar intervalos de confiança por comparação.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar resumo agregado por grupo de comparação.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>Cada comparação deve ter no máximo uma linha por frequência e período.</td></tr>
+<tr><td>OK</td><td>A base de bootstrap não deve conter excesso de retorno ausente.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve carregar as métricas oficiais da Etapa 11.3.</td></tr>
+<tr><td>OK</td><td>Métricas ausentes: []</td></tr>
+<tr><td>OK</td><td>O ranking deve usar Sharpe oficial anualizado com taxa livre de risco.</td></tr>
+<tr><td>OK</td><td>O ranking deve usar Calmar oficial da Etapa 11.3.</td></tr>
+<tr><td>OK</td><td>Espera-se encontrar Capitulação e Euforia nas métricas oficiais.</td></tr>
+<tr><td>OK</td><td>A subetapa deve comparar métricas oficiais entre estratégia real e comparadores.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar percentis empíricos por grupo de comparação e métrica.</td></tr>
+<tr><td>OK</td><td>A subetapa deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>Os percentis devem incluir comparações contra Ibovespa e CDI quando houver métricas oficiais disponíveis.</td></tr>
+<tr><td>OK</td><td>Os percentis devem incluir controles aleatórios.</td></tr>
+<tr><td>OK</td><td>Os percentis devem incluir controles mensais.</td></tr>
+<tr><td>OK</td><td>Os percentis devem incluir Capitulação contra Euforia.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar ranking estatístico por métricas oficiais e taxa de superação.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar posicionamento estatístico consolidado por grupo de comparação.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>A subetapa deve consolidar evidências das subetapas estatísticas anteriores.</td></tr>
+<tr><td>OK</td><td>A consolidação por estratégia, frequência e grupo deve ser gerada.</td></tr>
+<tr><td>OK</td><td>O resumo executivo deve ser gerado para consumo do HTML final.</td></tr>
+<tr><td>OK</td><td>Espera-se uma linha final para Capitulação e outra para Euforia.</td></tr>
+<tr><td>OK</td><td>A consolidação deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A visão mensal deve existir como principal para conclusão estatística.</td></tr>
+<tr><td>OK</td><td>A consolidação deve incluir benchmarks.</td></tr>
+<tr><td>OK</td><td>A consolidação deve incluir controles aleatórios.</td></tr>
+<tr><td>OK</td><td>A consolidação deve incluir controles mensais.</td></tr>
+<tr><td>OK</td><td>A consolidação deve incluir Capitulação contra Euforia.</td></tr>
+<tr><td>OK</td><td>A matriz deve consolidar múltiplas origens de evidência.</td></tr>
+<tr><td>OK</td><td>Todas as linhas consolidadas devem ter classificação final.</td></tr>
+<tr><td>OK</td><td>A subetapa deve gerar base gráfica para o HTML final.</td></tr>
+<tr><td>OK</td><td>Classificações desfavoráveis não devem receber leitura textual favorável.</td></tr>
+<tr><td>OK</td><td>As métricas numéricas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Todos os arquivos obrigatórios da subetapa devem estar disponíveis.</td></tr>
+<tr><td>OK</td><td>Deve haver resumo executivo para Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A tabela de métricas oficiais deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A tabela de métricas deve conter Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A tabela de comparação contra benchmarks deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A tabela de comparação contra controles deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A tabela de comparação direta entre Capitulação e Euforia deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A tabela de inferência estatística deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A tabela de robustez e sensibilidade deve ser gerada.</td></tr>
+<tr><td>OK</td><td>O catálogo de entradas e saídas deve ser gerado.</td></tr>
+<tr><td>OK</td><td>As tabelas consolidadas não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Todos os arquivos obrigatórios da subetapa devem estar disponíveis.</td></tr>
+<tr><td>OK</td><td>A base de curvas patrimoniais deve ser gerada.</td></tr>
+<tr><td>OK</td><td>As curvas devem conter Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A base indexada deve ser gerada para o gráfico principal de performance.</td></tr>
+<tr><td>OK</td><td>A base de retornos periódicos deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de retornos deve preservar as visões diária, mensal e anual.</td></tr>
+<tr><td>OK</td><td>A base de desempenho contra benchmarks deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de benchmarks deve conter Ibovespa e CDI.</td></tr>
+<tr><td>OK</td><td>A base de desempenho contra controles deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A comparação direta Capitulação vs Euforia deve ser preservada.</td></tr>
+<tr><td>OK</td><td>A base de distribuição de retornos deve ser gerada.</td></tr>
+<tr><td>OK</td><td>Cada estratégia deve ter no máximo uma linha por data na base de curvas.</td></tr>
+<tr><td>OK</td><td>Cada estratégia deve ter no máximo uma linha por frequência e período na base de retornos.</td></tr>
+<tr><td>OK</td><td>O primeiro ponto acumulado de cada estratégia e frequência deve estar alinhado em base 100.</td></tr>
+<tr><td>OK</td><td>As bases de gráficos não devem conter valores infinitos.</td></tr>
+<tr><td>OK</td><td>Todos os arquivos obrigatórios da subetapa devem estar disponíveis.</td></tr>
+<tr><td>OK</td><td>A base de drawdown deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de drawdown deve conter Capitulação e Euforia.</td></tr>
+<tr><td>OK</td><td>A tabela de eventos de drawdown deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de volatilidade rolling deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A volatilidade rolling deve preservar as visões diária, mensal e anual quando aplicável.</td></tr>
+<tr><td>OK</td><td>A base de métricas oficiais de risco deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base longa de métricas de risco deve ser gerada para gráficos.</td></tr>
+<tr><td>OK</td><td>A base de risco relativo contra benchmarks deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de risco relativo contra controles deve ser gerada.</td></tr>
+<tr><td>OK</td><td>A base de risco direto Capitulação vs Euforia deve ser gerada.</td></tr>
+<tr><td>OK</td><td>Cada estratégia deve ter no máximo uma linha por data na base de drawdown.</td></tr>
+<tr><td>OK</td><td>Cada estratégia deve ter no máximo uma linha por frequência, janela e período na base de volatilidade.</td></tr>
+<tr><td>OK</td><td>A tabela de resumo dos gráficos de risco deve ser gerada.</td></tr>
+<tr><td>OK</td><td>Carteiras aleatórias não devem ser classificadas como estratégias reais nas métricas de risco.</td></tr>
+<tr><td>OK</td><td>Carteiras aleatórias não devem ser classificadas como estratégias reais na base de drawdown.</td></tr>
+<tr><td>OK</td><td>As bases de risco não devem conter valores infinitos.</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

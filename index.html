@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capitulação e Euforia no Mercado Brasileiro — Relatório Final</title>
+  <meta name="description" content="Dashboard interativo do projeto de Capitulação e Euforia no mercado brasileiro, com performance, risco, controles, inferência estatística, robustez, sinais, aportes, compras e composição.">
+  <link rel="stylesheet" href="html_final/assets/css/capitulacao_euforia_final.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-title">Capitulação e Euforia no Mercado Brasileiro — Relatório Final</div>
+      <div class="nav-links">
+        <a class="nav-link" href="#resumo">Resumo</a>
+        <a class="nav-link" href="#introducao">Introdução</a>
+        <a class="nav-link" href="#metodologia">Metodologia</a>
+        <a class="nav-link" href="#resultados">Resultados</a>
+        <a class="nav-link" href="#performance">Performance</a>
+        <a class="nav-link" href="#risco">Risco</a>
+        <a class="nav-link" href="#capitulacao_euforia">Capitulação vs Euforia</a>
+        <a class="nav-link" href="#inferencia">Inferência</a>
+        <a class="nav-link" href="#composicao">Composição</a>
+        <a class="nav-link" href="#tabelas">Tabelas</a>
+        <a class="nav-link" href="#conclusao">Conclusão</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero" id="resumo">
+      <h1>Capitulação e Euforia no Mercado Brasileiro</h1>
+      <p>Relatório interativo com estratégias de extremos de mercado, benchmarks, controles, inferência estatística, robustez e auditoria econômica das carteiras.</p>
+      
+<div class="badges">
+    <span class="badge">Período: 2011-06-29 a 2025-12-30</span>
+    <span class="badge">8 estratégias/séries</span>
+    <span class="badge">46 sinais consolidados</span>
+    <span class="badge">276 aportes</span>
+    <span class="badge">20.845 compras por ticker</span>
+    <span class="badge">0 evidências robustas/significativas</span>
+</div>
+
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Visão executiva</div>
+        <h2>Resumo em números</h2>
+      </div>
+      <div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-title">Estratégias/séries</div>
+        <div class="kpi-value">8</div>
+        <div class="kpi-detail">séries finais analisadas</div>
+    </div>
+    
+
+    <div class="kpi-card">
+        <div class="kpi-title">Sinais</div>
+        <div class="kpi-value">46</div>
+        <div class="kpi-detail">eventos de capitulação, euforia e controles</div>
+    </div>
+    
+
+    <div class="kpi-card">
+        <div class="kpi-title">Aportes</div>
+        <div class="kpi-value">276</div>
+        <div class="kpi-detail">registros de alocação</div>
+    </div>
+    
+
+    <div class="kpi-card">
+        <div class="kpi-title">Compras por ticker</div>
+        <div class="kpi-value">20.845</div>
+        <div class="kpi-detail">linhas de compras agregadas</div>
+    </div>
+    
+
+    <div class="kpi-card">
+        <div class="kpi-title">Tickers comprados</div>
+        <div class="kpi-value">239</div>
+        <div class="kpi-detail">ativos distintos nas compras</div>
+    </div>
+    
+
+    <div class="kpi-card">
+        <div class="kpi-title">Evidências robustas</div>
+        <div class="kpi-value">0</div>
+        <div class="kpi-detail">inferência estatística consolidada</div>
+    </div>
+    </div>
+    </section>
+
+    <section id="introducao" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Introdução</div>
+        <h2>Estratégias de extremos sob a mesma régua metodológica</h2>
+      </div>
+      
+<p>
+    Este estudo investiga se momentos extremos de mercado carregam informação útil para a construção de carteiras no Brasil.
+    A hipótese central é simples: períodos de <b>capitulação</b>, marcados por estresse, quedas relevantes e deterioração ampla
+    de preços, podem oferecer pontos de entrada diferentes daqueles observados em períodos de <b>euforia</b>, nos quais o mercado
+    apresenta força, proximidade de máximas e maior complacência com risco.
+</p>
+
+<p>
+    O projeto compara essas duas famílias de sinais em uma estrutura única de avaliação: retorno, risco, eficiência ajustada,
+    drawdown, benchmarks, controles aleatórios, controles mensais, inferência estatística, robustez e composição das carteiras.
+    A pergunta não é apenas qual família terminou com maior retorno, mas se o resultado foi persistente, estatisticamente
+    defensável e economicamente diversificado.
+</p>
+
+<p>
+    A análise cobre o período disponível nas curvas finais entre <b>2011-06-29</b> e <b>2025-12-30</b>.
+    Foram mapeadas <b>8</b> estratégias ou séries finais, <b>46</b> sinais,
+    <b>276</b> aportes e <b>20.845</b> registros de compras por ticker.
+</p>
+
+    </section>
+
+    <section id="metodologia" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Metodologia</div>
+        <h2>Como os sinais foram transformados em carteiras comparáveis</h2>
+      </div>
+      <div class="two-col">
+        <div>
+          
+<p>
+    A metodologia parte da identificação de janelas de mercado extremas. Os sinais de capitulação buscam representar momentos
+    de estresse, desvalorização e piora ampla do mercado; os sinais de euforia capturam ambientes de força e proximidade de
+    máximas. A partir desses sinais, as carteiras são formadas com regras padronizadas de elegibilidade, liquidez, filtros
+    contábeis e distribuição dos aportes.
+</p>
+
+<p>
+    A comparação foi desenhada para evitar que o resultado dependa apenas da data escolhida. Por isso, as estratégias reais são
+    avaliadas contra benchmarks de mercado, controles aleatórios e controles mensais. Os controles funcionam como contrafactuais:
+    eles ajudam a distinguir o que parece vir do sinal de mercado daquilo que poderia surgir de aportes em datas alternativas.
+</p>
+
+<p>
+    A avaliação combina três níveis. O primeiro mede performance: curvas patrimoniais, curvas indexadas, retornos acumulados e
+    retornos periódicos. O segundo mede risco: volatilidade, drawdown, eventos de queda e métricas de eficiência. O terceiro
+    mede robustez: testes estatísticos, sensibilidade de parâmetros e posicionamento empírico frente aos controles.
+</p>
+
+        </div>
+        <div class="method-cards">
+          
+    <div class="info-card">
+        <h4>Capitulação</h4>
+        <p>Sinais associados a estresse de mercado, quedas relevantes e possível assimetria de oportunidade após movimentos extremos.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Euforia</h4>
+        <p>Sinais associados a força de mercado, proximidade de máximas e possível risco de comprar em ambientes excessivamente otimistas.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Universo elegível</h4>
+        <p>Formação de carteiras com regras de elegibilidade, liquidez e filtros contábeis aplicados antes das compras.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Benchmarks</h4>
+        <p>Comparação contra referências de mercado para avaliar se a estratégia adiciona valor frente a alternativas passivas.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Controles</h4>
+        <p>Amostras aleatórias e mensais usadas como contrafactuais para testar se o sinal supera datas alternativas de compra.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Inferência e robustez</h4>
+        <p>Testes estatísticos, sensibilidade de parâmetros e percentis empíricos para avaliar estabilidade dos resultados.</p>
+    </div>
+    
+        </div>
+      </div>
+    </section>
+
+    <section id="resultados" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Principais resultados</div>
+        <h2>Performance, risco e robustez precisam ser lidos juntos</h2>
+      </div>
+      
+<p>
+    O primeiro bloco de resultado é a comparação de performance. A estratégia com melhor métrica de retorno no consolidado foi capitulacao, com 291,36%.
+    As curvas patrimoniais e indexadas permitem verificar se a liderança foi estável ao longo do tempo ou concentrada em poucos
+    episódios específicos.
+</p>
+
+<p>
+    O segundo bloco é a leitura de risco. A melhor leitura de risco ajustado apareceu em capitulacao, com métrica de eficiência de 0,0474. A leitura de drawdown deve ser consultada no bloco de risco.
+    Essa separação é importante porque uma estratégia pode terminar com retorno superior, mas ainda assim carregar trajetória
+    mais instável, maior drawdown ou pior eficiência ajustada ao risco.
+</p>
+
+<p>
+    O terceiro bloco é a comparação com benchmarks e controles. O estudo confronta as estratégias reais com referências passivas,
+    controles aleatórios e controles mensais, permitindo avaliar se o comportamento observado se distancia de alternativas que
+    não dependem de sinais de capitulação ou euforia.
+</p>
+
+<p>
+    O quarto bloco é a comparação direta entre Capitulação e Euforia. A comparação direta entre Capitulação e Euforia foi preservada em tabela e gráficos próprios para leitura no dashboard.
+    A leitura final deve combinar esse bloco com as métricas de risco, os testes estatísticos, a robustez por sensibilidade e
+    a composição das carteiras.
+</p>
+
+      <div class="takeaways-grid">
+    <div class="takeaway-card">
+        <div class="takeaway-index">01</div>
+        <div>
+            <h3>Capitulação e Euforia são comparadas em bases equivalentes</h3>
+            <p>As estratégias de extremos de mercado são avaliadas com a mesma régua de performance, risco, benchmarks e controles.</p>
+        </div>
+    </div>
+    
+
+    <div class="takeaway-card">
+        <div class="takeaway-index">02</div>
+        <div>
+            <h3>Performance e risco são analisados separadamente</h3>
+            <p>A estratégia com melhor métrica de retorno no consolidado foi capitulacao, com 291,36%. A melhor leitura de risco ajustado apareceu em capitulacao, com métrica de eficiência de 0,0474.</p>
+        </div>
+    </div>
+    
+
+    <div class="takeaway-card">
+        <div class="takeaway-index">03</div>
+        <div>
+            <h3>A robustez define a força da evidência</h3>
+            <p>O painel preserva 0 evidências robustas/significativas e 0 evidências sensíveis ou frágeis identificadas nos testes.</p>
+        </div>
+    </div>
+    
+
+    <div class="takeaway-card">
+        <div class="takeaway-index">04</div>
+        <div>
+            <h3>Controles aleatórios e mensais são o contrafactual principal</h3>
+            <p>As estratégias reais são confrontadas com alternativas sem condicionamento ao sinal, reduzindo o risco de atribuir causalidade a padrões de calendário ou aleatoriedade.</p>
+        </div>
+    </div>
+    
+
+    <div class="takeaway-card">
+        <div class="takeaway-index">05</div>
+        <div>
+            <h3>Sinais, aportes e compras ficam auditáveis</h3>
+            <p>O estudo expõe 46 sinais, 276 aportes e 20.845 registros de compras por ticker.</p>
+        </div>
+    </div>
+    
+
+    <div class="takeaway-card">
+        <div class="takeaway-index">06</div>
+        <div>
+            <h3>Composição e concentração fecham a leitura econômica</h3>
+            <p>As posições históricas, a concentração por empresa e a concentração por setor, subsetor e segmento ajudam a interpretar a origem econômica dos resultados.</p>
+        </div>
+    </div>
+    </div>
+    </section>
+
+    <section id="performance" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Performance</div>
+        <h2>Curvas, retornos e comparação contra referências</h2>
+      </div>
+      <p>
+        Esta seção concentra curvas patrimoniais, curvas indexadas, retornos acumulados, distribuição de retornos e comparação
+        contra benchmarks e controles. Use os seletores para navegar entre os gráficos da análise.
+      </p>
+      <div class="viewer-grid">
+        
+    <div class="viewer-card">
+        <h3>Gráficos de performance</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_performance"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_performance" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_performance" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_performance" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="risco" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Risco</div>
+        <h2>Drawdown, volatilidade e eficiência</h2>
+      </div>
+      <p>
+        A análise de risco separa o retorno final da qualidade da trajetória. O objetivo é mostrar se a estratégia foi eficiente
+        ou se o resultado veio acompanhado de perdas máximas e volatilidade incompatíveis.
+      </p>
+      <div class="viewer-grid">
+        
+    <div class="viewer-card">
+        <h3>Gráficos de risco</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_risco"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_risco" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_risco" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_risco" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="capitulacao_euforia" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Capitulação vs Euforia</div>
+        <h2>Comparação direta entre famílias de estratégia</h2>
+      </div>
+      <p>
+        Este bloco isola a comparação entre sinais de capitulação e sinais de euforia, preservando a análise de performance,
+        risco e eficiência sob uma estrutura comparável.
+      </p>
+      <div class="viewer-grid">
+        
+    <div class="viewer-card">
+        <h3>Gráficos — Capitulação vs Euforia</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_capitulacao_euforia"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_capitulacao_euforia" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_capitulacao_euforia" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_capitulacao_euforia" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="inferencia" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Inferência estatística</div>
+        <h2>Significância, controles e sensibilidade</h2>
+      </div>
+      <div class="two-col">
+        <div>
+          
+<p>
+    A inferência estatística foi construída para separar resultado visualmente interessante de evidência mais confiável. O
+    estudo considera testes, posicionamento empírico, percentis, sensibilidade de parâmetros e comparação com controles.
+</p>
+
+<p>
+    Foram identificadas <b>0</b> evidências robustas, significativas ou confirmadas nos
+    consolidados disponíveis, além de <b>0</b> evidências sensíveis, frágeis ou não
+    confirmadas. Essa gradação é essencial para separar desempenho econômico promissor de evidência estatística efetivamente
+    estável.
+</p>
+
+<p>
+    Resultados que superam benchmarks, mas não se destacam contra controles aleatórios ou mensais, pedem cautela. Resultados que
+    mantêm bom posicionamento em performance, risco, controles e testes estatísticos são metodologicamente mais fortes.
+</p>
+
+        </div>
+        <div class="info-grid">
+          
+    <div class="info-card">
+        <h4>Evidências robustas/significativas</h4>
+        <p><b>0</b> registros identificados nos consolidados de inferência/robustez.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Evidências sensíveis/frágeis</h4>
+        <p><b>0</b> registros classificados como sensíveis, frágeis ou não confirmados.</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Melhor retorno consolidado</h4>
+        <p><b>capitulacao</b><br>291,36%</p>
+    </div>
+    
+
+    <div class="info-card">
+        <h4>Melhor eficiência</h4>
+        <p><b>capitulacao</b><br>0,0474</p>
+    </div>
+    
+        </div>
+      </div>
+      <div class="viewer-grid" style="margin-top: 18px;">
+        
+    <div class="viewer-card">
+        <h3>Gráficos de inferência e robustez</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_inferencia"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_inferencia" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_inferencia" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_inferencia" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="composicao" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Composição e auditoria econômica</div>
+        <h2>Sinais, aportes, compras, posições e concentração</h2>
+      </div>
+      
+<p>
+    A composição mostra como os sinais se transformaram em alocações reais dentro do backtest. A análise contempla
+    <b>276</b> registros de aportes, <b>20.845</b> registros de compras por ticker e
+    <b>526.253</b> registros de posições históricas.
+</p>
+
+<p>
+    A concentração por empresa e por classificação setorial permite verificar se o resultado veio de uma carteira diversificada
+    ou de poucos nomes dominantes. Essa leitura é indispensável para interpretar estratégias baseadas em extremos de mercado,
+    porque retornos elevados podem depender de concentração involuntária em empresas, setores ou subsetores específicos.
+</p>
+
+      <div class="viewer-grid">
+        
+    <div class="viewer-card">
+        <h3>Gráficos de composição e concentração</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_composicao"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_composicao" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_composicao" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_composicao" class="viewer-caption"></div>
+    </div>
+    
+        
+    <div class="viewer-card">
+        <h3>Gráficos de auditoria</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione o gráfico</label>
+                <select id="grafico_select_auditoria"></select>
+            </div>
+            <div class="actions">
+                <a id="grafico_open_auditoria" class="btn-link-open" href="#" target="_blank">Abrir gráfico</a>
+            </div>
+        </div>
+        <iframe id="grafico_frame_auditoria" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="grafico_caption_auditoria" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="tabelas" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Tabelas navegáveis</div>
+        <h2>Bases analíticas do dashboard</h2>
+      </div>
+      <p>
+        As tabelas abaixo permitem consultar métricas, rankings, testes, sinais, compras, posições e auditorias em detalhes.
+        Use a busca e a ordenação para explorar os resultados por estratégia, período, ativo, setor ou métrica.
+      </p>
+      <div class="viewer-grid">
+        
+    <div class="viewer-card">
+        <h3>Resumo, métricas principais e comparações consolidadas</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione a tabela</label>
+                <select id="tabela_select_resumo"></select>
+            </div>
+            <div class="actions">
+                <a id="tabela_open_resumo" class="btn-link-open" href="#" target="_blank">Abrir tabela</a>
+            </div>
+        </div>
+        <iframe id="tabela_frame_resumo" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="tabela_caption_resumo" class="viewer-caption"></div>
+    </div>
+    
+        
+    <div class="viewer-card">
+        <h3>Tabelas de performance</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione a tabela</label>
+                <select id="tabela_select_performance_tab"></select>
+            </div>
+            <div class="actions">
+                <a id="tabela_open_performance_tab" class="btn-link-open" href="#" target="_blank">Abrir tabela</a>
+            </div>
+        </div>
+        <iframe id="tabela_frame_performance_tab" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="tabela_caption_performance_tab" class="viewer-caption"></div>
+    </div>
+    
+        
+    <div class="viewer-card">
+        <h3>Tabelas de risco</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione a tabela</label>
+                <select id="tabela_select_risco_tab"></select>
+            </div>
+            <div class="actions">
+                <a id="tabela_open_risco_tab" class="btn-link-open" href="#" target="_blank">Abrir tabela</a>
+            </div>
+        </div>
+        <iframe id="tabela_frame_risco_tab" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="tabela_caption_risco_tab" class="viewer-caption"></div>
+    </div>
+    
+        
+    <div class="viewer-card">
+        <h3>Tabelas de inferência e robustez</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione a tabela</label>
+                <select id="tabela_select_inferencia_tab"></select>
+            </div>
+            <div class="actions">
+                <a id="tabela_open_inferencia_tab" class="btn-link-open" href="#" target="_blank">Abrir tabela</a>
+            </div>
+        </div>
+        <iframe id="tabela_frame_inferencia_tab" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="tabela_caption_inferencia_tab" class="viewer-caption"></div>
+    </div>
+    
+        
+    <div class="viewer-card">
+        <h3>Tabelas de composição, sinais, compras e auditoria</h3>
+        <div class="viewer-toolbar">
+            <div class="filter-box">
+                <label>Selecione a tabela</label>
+                <select id="tabela_select_composicao_tab"></select>
+            </div>
+            <div class="actions">
+                <a id="tabela_open_composicao_tab" class="btn-link-open" href="#" target="_blank">Abrir tabela</a>
+            </div>
+        </div>
+        <iframe id="tabela_frame_composicao_tab" class="viewer-frame" src="about:blank" loading="lazy"></iframe>
+        <div id="tabela_caption_composicao_tab" class="viewer-caption"></div>
+    </div>
+    
+      </div>
+    </section>
+
+    <section id="conclusao" class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Conclusão</div>
+        <h2>Leitura final do projeto</h2>
+      </div>
+      
+<div class="conclusao">
+    <h3>Conclusão</h3>
+    <p>
+        Este projeto não foi construído para responder apenas se <b>Capitulação</b> ou <b>Euforia</b> teve o maior retorno no fim da amostra.
+        Ele foi desenhado para testar, sob a mesma régua metodológica, se comprar momentos de estresse extremo ou momentos de força do mercado
+        produz trajetórias diferentes quando as duas abordagens são confrontadas com benchmarks, controles aleatórios, controles mensais,
+        métricas de risco, inferência estatística, robustez e composição das carteiras.
+    </p>
+
+    <p>
+        A base final cobre o período de <b>2011-06-29</b> a <b>2025-12-30</b>, com <b>8</b>
+        estratégias ou séries finais, <b>46</b> sinais consolidados, <b>276</b> aportes,
+        <b>20.845</b> registros de compras por ticker, <b>239</b> tickers distintos comprados
+        e <b>526.253</b> registros de posições históricas. Em termos financeiros, os aportes somaram aproximadamente
+        <b>R$ 0,00</b> na base consolidada de alocações.
+    </p>
+
+    <p>
+        Na leitura das métricas principais, a comparação operacional entre as duas famílias fica mais concreta: Capitulação: retorno acumulado de <b>2,87%</b>, retorno anualizado de <b>9,77%</b>, Sharpe de <b>0,0210</b>, Sortino de <b>0,0269</b>, Calmar de <b>0,6311</b>, drawdown máximo de <b>N/A</b> e <b>175</b> períodos observados;
+        Euforia: retorno acumulado de <b>2,85%</b>, retorno anualizado de <b>9,74%</b>, Sharpe de <b>0,0220</b>, Sortino de <b>0,0283</b>, Calmar de <b>0,8625</b>, drawdown máximo de <b>N/A</b> e <b>175</b> períodos observados. Essa distinção é importante porque retorno acumulado, retorno anualizado, Sharpe, Sortino, Calmar e drawdown
+        não respondem à mesma pergunta. O retorno mede crescimento patrimonial, enquanto as métricas de eficiência e queda máxima indicam
+        se esse crescimento foi obtido com uma trajetória aceitável de risco.
+    </p>
+
+    <p>
+        Na comparação direta entre as famílias, a linha consolidada principal mostra Capitulação com retorno acumulado de
+        <b>2,81%</b> contra <b>2,79%</b> em Euforia, diferença de <b>1,52%</b> e excesso médio periódico de
+        <b>-0,00%</b>. Em frequência de superação, Capitulação ficou à frente em <b>38,86%</b> dos períodos, enquanto
+        Euforia superou Capitulação em <b>43,43%</b>. Nos testes formais, a leitura inclui p-valor de Wilcoxon de
+        <b>0,5325</b>, p-valor de permutação de <b>0,9755</b> e classificação direcional de <b>favoravel_economica_euforia_sem_significancia</b>.
+    </p>
+
+    <p>
+        A camada de evidência reforça que a conclusão não pode depender apenas da curva mais alta. No resumo executivo, Capitulação apresentou
+        score vs Ibovespa de <b>1,1818</b>, score vs CDI de <b>0,5000</b>, score vs controles aleatórios de
+        <b>-0,3214</b>, score vs controles mensais de <b>0,5197</b> e score médio de evidência de
+        <b>0,5760</b>. Para Euforia, os respectivos scores foram <b>1,1818</b>, <b>0,5000</b>,
+        <b>-0,7976</b>, <b>0,4408</b> e <b>0,3312</b>. A confirmação por bootstrap também aparece no resumo:
+        <b>51,15%</b> para Capitulação e <b>51,64%</b> para Euforia, com classificações finais de
+        <b>favoravel_moderado_sem_confirmacao_formal</b> e <b>neutro_ou_misto_sem_confirmacao_formal</b>, respectivamente.
+    </p>
+
+    <p>
+        A composição das carteiras fecha a interpretação econômica. O ticker mais relevante por valor ou contagem agregada foi
+        <b>AZZA3</b>, com métrica de <b>R$ 1.709,52</b>, enquanto a principal classificação
+        setorial identificada foi <b>Consumo Cíclico</b>, com métrica de <b>R$ 28.446,12</b>.
+        Esses números ajudam a separar desempenho genuinamente diversificado de desempenho concentrado em poucos ativos, empresas ou blocos setoriais.
+    </p>
+
+    <h3>Interpretação dos resultados</h3>
+    <p>
+        A primeira leitura do projeto é que estratégias de extremos de mercado precisam ser avaliadas como uma arquitetura completa, não como
+        uma aposta isolada em datas de compra. A diferença entre comprar capitulação e comprar euforia só é economicamente relevante se persistir
+        depois de controlar risco, drawdown, benchmarks, controles aleatórios e controles mensais.
+    </p>
+
+    <p>
+        O bloco de performance responde quem acumulou mais patrimônio. O bloco de risco responde se esse patrimônio foi construído com trajetória
+        mais eficiente ou mais instável. O bloco de controles responde se o sinal superou alternativas de calendário e aleatoriedade. O bloco de
+        inferência responde se a evidência é estatisticamente defensável. E o bloco de composição responde de onde veio o resultado: quais tickers,
+        empresas, setores, subsetores e segmentos concentraram as compras e posições.
+    </p>
+
+    <p>
+        A leitura estatística deve ser tratada com disciplina. Scores próximos de neutralidade, p-valores elevados ou baixa confirmação por bootstrap
+        não anulam necessariamente o resultado econômico, mas reduzem a força da conclusão. Por outro lado, quando performance, risco, controles,
+        bootstrap e testes convergem, a evidência deixa de ser apenas uma boa história visual e passa a ser uma hipótese quantitativamente mais robusta.
+    </p>
+
+    <h3>Principais aprendizados</h3>
+    <ul>
+        <li>A comparação entre Capitulação e Euforia precisa combinar retorno, risco, drawdown, eficiência, controles e inferência; uma única métrica não é suficiente.</li>
+        <li>O projeto analisou <b>46</b> sinais, <b>276</b> aportes e <b>20.845</b> compras por ticker, preservando rastreabilidade operacional.</li>
+        <li>As métricas principais mostram diferenças entre crescimento patrimonial e eficiência ajustada ao risco: retorno acumulado, Sharpe, Sortino e Calmar podem apontar lideranças diferentes.</li>
+        <li>A comparação direta registrou superação de Capitulação em <b>38,86%</b> dos períodos e de Euforia em <b>43,43%</b>, o que impede uma leitura baseada apenas no valor final da curva.</li>
+        <li>Benchmarks, controles aleatórios e controles mensais funcionam como contrafactuais essenciais para reduzir o risco de confundir sinal com calendário ou sorte amostral.</li>
+        <li>A concentração por ticker, empresa, setor, subsetor e segmento é indispensável para entender se o resultado veio de uma carteira ampla ou de poucos blocos dominantes.</li>
+        <li>A evidência final deve ser lida por convergência: desempenho econômico, robustez estatística, confirmação por bootstrap e coerência de composição.</li>
+    </ul>
+
+    <h3>Síntese</h3>
+    <p>
+        Em termos práticos, o estudo entrega uma leitura auditável de duas formas opostas de operar extremos de mercado no Brasil. A Capitulação
+        representa a tentativa de comprar estresse; a Euforia representa a tentativa de comprar força. O resultado final não deve ser reduzido a
+        um campeão absoluto, porque cada família precisa ser julgada por retorno, risco, estabilidade, controles e composição.
+    </p>
+
+    <p>
+        A síntese é que o projeto permite identificar quando uma estratégia de extremo de mercado parece economicamente promissora, quando essa
+        promessa sobrevive aos controles e quando ela se apoia em evidência estatística mais frágil. Essa distinção é o principal valor do relatório:
+        ele transforma uma comparação intuitiva entre medo e euforia em uma avaliação quantitativa, auditável e interpretável por camadas.
+    </p>
+</div>
+
+    </section>
+
+    <div class="footer">
+      Projeto de Capitulação e Euforia no Mercado Brasileiro — relatório interativo de pesquisa quantitativa.
+    </div>
+  </main>
+
+  <script src="html_final/assets/js/capitulacao_euforia_data.js"></script>
+  <script src="html_final/assets/js/capitulacao_euforia_final.js"></script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparação com benchmarks</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Comparação com benchmarks</div>
+  <div class="table-subtitle">Comparações finais contra Ibovespa e CDI.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Estratégia de referência</th><th data-col='2'>Tipo comparacao</th><th data-col='3'>Grupo comparacao</th><th data-col='4'>Nome exibicao comparador</th><th data-col='5'>N periodos</th><th data-col='6'>N periodos validos excesso</th><th data-col='7'>N vitorias real</th><th data-col='8'>N empates real</th><th data-col='9'>N derrotas real</th><th data-col='10'>Media retorno real periodico</th><th data-col='11'>Media retorno comparador periodico</th><th data-col='12'>Media excesso periodico</th><th data-col='13'>Mediana excesso periodico</th><th data-col='14'>Pct periodos real superou comparador</th><th data-col='15'>Pct periodos real superou sem empates</th><th data-col='16'>p-valor teste de sinal</th><th data-col='17'>p-valor Wilcoxon</th><th data-col='18'>p-valor permutação</th><th data-col='19'>Estatistica wilcoxon</th><th data-col='20'>Classificacao evidencia benchmark</th><th data-col='21'>N validos teste sinal</th><th data-col='22'>Desvio excesso periodico</th><th data-col='23'>Min excesso periodico</th><th data-col='24'>Max excesso periodico</th><th data-col='25'>Q05 excesso periodico</th><th data-col='26'>Q25 excesso periodico</th><th data-col='27'>Q75 excesso periodico</th><th data-col='28'>Q95 excesso periodico</th><th data-col='29'>Media excesso anualizada aproximada</th><th data-col='30'>Efeito padronizado media</th><th data-col='31'>P valor holm teste sinal</th><th data-col='32'>P valor holm wilcoxon</th><th data-col='33'>P valor holm permutacao</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>diaria</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>3.599</td><td>3.599</td><td>1.810</td><td>1</td><td>1.788</td><td>0,04%</td><td>0,04%</td><td>0,00%</td><td>0,01%</td><td>50,29%</td><td>50,31%</td><td>0,3631</td><td>0,5115</td><td>0,4793</td><td>3.235.504,00</td><td>favoravel economica sem significancia</td><td>3.598</td><td>1,24%</td><td>-11,54%</td><td>10,49%</td><td>-1,87%</td><td>-0,64%</td><td>0,62%</td><td>1,91%</td><td>0,11%</td><td>0,0003</td><td>0,7336</td><td>0,9519</td><td>1,0000</td></tr>
+<tr><td>diaria</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>3.599</td><td>3.599</td><td>1.583</td><td>640</td><td>1.517</td><td>0,04%</td><td>0,04%</td><td>0,00%</td><td>0,00%</td><td>43,98%</td><td>51,06%</td><td>0,1215</td><td>0,0624</td><td>0,4315</td><td>2.479.760,50</td><td>favoravel economica sem significancia</td><td>3.100</td><td>0,36%</td><td>-4,31%</td><td>2,35%</td><td>-0,56%</td><td>-0,11%</td><td>0,13%</td><td>0,55%</td><td>0,30%</td><td>0,0032</td><td>0,4861</td><td>0,2497</td><td>1,0000</td></tr>
+<tr><td>diaria</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>3.599</td><td>3.599</td><td>1.814</td><td>1</td><td>1.784</td><td>0,04%</td><td>0,04%</td><td>0,00%</td><td>0,01%</td><td>50,40%</td><td>50,42%</td><td>0,3144</td><td>0,4759</td><td>0,4825</td><td>3.241.063,00</td><td>favoravel economica sem significancia</td><td>3.598</td><td>1,22%</td><td>-10,90%</td><td>9,23%</td><td>-1,85%</td><td>-0,63%</td><td>0,61%</td><td>1,91%</td><td>0,12%</td><td>0,0004</td><td>0,7336</td><td>0,9519</td><td>1,0000</td></tr>
+<tr><td>diaria</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>3.599</td><td>3.599</td><td>1.528</td><td>730</td><td>1.489</td><td>0,04%</td><td>0,04%</td><td>0,00%</td><td>0,00%</td><td>42,46%</td><td>50,65%</td><td>0,2445</td><td>0,0661</td><td>0,4399</td><td>2.348.365,00</td><td>favoravel economica sem significancia</td><td>3.017</td><td>0,40%</td><td>-5,56%</td><td>2,99%</td><td>-0,59%</td><td>-0,09%</td><td>0,11%</td><td>0,59%</td><td>0,31%</td><td>0,0030</td><td>0,7336</td><td>0,2497</td><td>1,0000</td></tr>
+<tr><td>mensal</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>175</td><td>175</td><td>89</td><td>0</td><td>86</td><td>0,78%</td><td>0,73%</td><td>0,05%</td><td>0,05%</td><td>50,86%</td><td>50,86%</td><td>0,4399</td><td>0,4431</td><td>0,4573</td><td>7.796,00</td><td>favoravel economica sem significancia</td><td>175</td><td>4,96%</td><td>-14,59%</td><td>19,46%</td><td>-8,21%</td><td>-2,97%</td><td>2,80%</td><td>8,10%</td><td>0,57%</td><td>0,0095</td><td>1,0000</td><td>0,8523</td><td>1,0000</td></tr>
+<tr><td>mensal</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>175</td><td>175</td><td>86</td><td>31</td><td>85</td><td>0,78%</td><td>0,76%</td><td>0,02%</td><td>0,00%</td><td>49,14%</td><td>50,29%</td><td>0,5000</td><td>0,2077</td><td>0,4185</td><td>7.881,00</td><td>favoravel economica sem significancia</td><td>171</td><td>1,70%</td><td>-10,78%</td><td>3,93%</td><td>-2,96%</td><td>-0,50%</td><td>0,88%</td><td>2,65%</td><td>0,30%</td><td>0,0147</td><td>1,0000</td><td>0,8308</td><td>1,0000</td></tr>
+<tr><td>mensal</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>175</td><td>175</td><td>90</td><td>0</td><td>85</td><td>0,78%</td><td>0,73%</td><td>0,05%</td><td>0,07%</td><td>51,43%</td><td>51,43%</td><td>0,3812</td><td>0,4261</td><td>0,4529</td><td>7.825,00</td><td>favoravel economica sem significancia</td><td>175</td><td>4,92%</td><td>-15,55%</td><td>16,44%</td><td>-8,73%</td><td>-2,94%</td><td>2,76%</td><td>8,33%</td><td>0,58%</td><td>0,0097</td><td>1,0000</td><td>0,8523</td><td>1,0000</td></tr>
+<tr><td>mensal</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>175</td><td>175</td><td>82</td><td>36</td><td>88</td><td>0,78%</td><td>0,76%</td><td>0,03%</td><td>-0,00%</td><td>46,86%</td><td>48,24%</td><td>0,7043</td><td>0,2137</td><td>0,4257</td><td>7.777,50</td><td>favoravel economica sem significancia</td><td>170</td><td>1,86%</td><td>-13,81%</td><td>5,05%</td><td>-2,99%</td><td>-0,33%</td><td>0,78%</td><td>2,70%</td><td>0,31%</td><td>0,0138</td><td>1,0000</td><td>0,8308</td><td>1,0000</td></tr>
+<tr><td>anual</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>15</td><td>15</td><td>9</td><td>0</td><td>6</td><td>9,52%</td><td>8,05%</td><td>1,47%</td><td>0,84%</td><td>60,00%</td><td>60,00%</td><td>0,3036</td><td>0,3193</td><td>0,3481</td><td>69,00</td><td>favoravel economica sem significancia</td><td>15</td><td>14,00%</td><td>-23,01%</td><td>23,38%</td><td>-16,94%</td><td>-10,46%</td><td>11,84%</td><td>22,69%</td><td>1,47%</td><td>0,1049</td><td>1,0000</td><td>1,0000</td><td>1,0000</td></tr>
+<tr><td>anual</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>15</td><td>15</td><td>7</td><td>3</td><td>8</td><td>9,52%</td><td>9,25%</td><td>0,27%</td><td>-0,00%</td><td>46,67%</td><td>46,67%</td><td>0,6964</td><td>0,4670</td><td>0,4241</td><td>62,00</td><td>favoravel economica sem significancia</td><td>15</td><td>5,70%</td><td>-10,91%</td><td>11,76%</td><td>-7,70%</td><td>-2,36%</td><td>3,47%</td><td>8,92%</td><td>0,27%</td><td>0,0478</td><td>1,0000</td><td>1,0000</td><td>1,0000</td></tr>
+<tr><td>anual</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>Ibovespa</td><td>15</td><td>15</td><td>8</td><td>0</td><td>7</td><td>9,49%</td><td>8,05%</td><td>1,44%</td><td>0,36%</td><td>53,33%</td><td>53,33%</td><td>0,5000</td><td>0,3193</td><td>0,3543</td><td>69,00</td><td>favoravel economica sem significancia</td><td>15</td><td>14,37%</td><td>-24,54%</td><td>24,63%</td><td>-17,40%</td><td>-10,10%</td><td>11,73%</td><td>23,75%</td><td>1,44%</td><td>0,1005</td><td>1,0000</td><td>1,0000</td><td>1,0000</td></tr>
+<tr><td>anual</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>CDI</td><td>15</td><td>15</td><td>6</td><td>3</td><td>9</td><td>9,49%</td><td>9,25%</td><td>0,25%</td><td>-0,00%</td><td>40,00%</td><td>40,00%</td><td>0,8491</td><td>0,6401</td><td>0,4407</td><td>54,00</td><td>favoravel economica sem significancia</td><td>15</td><td>6,06%</td><td>-10,50%</td><td>15,47%</td><td>-8,06%</td><td>-1,26%</td><td>1,77%</td><td>8,90%</td><td>0,25%</td><td>0,0409</td><td>1,0000</td><td>1,0000</td><td>1,0000</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

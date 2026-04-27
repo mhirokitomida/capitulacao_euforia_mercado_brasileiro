@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inferência — bootstrap e percentis</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Inferência — bootstrap e percentis</div>
+  <div class="table-subtitle">Percentis empíricos e probabilidade bootstrap de excesso positivo.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Estratégia de referência</th><th data-col='2'>Tipo comparacao</th><th data-col='3'>Grupo comparacao</th><th data-col='4'>Classificação da evidência</th><th data-col='5'>Label grupo comparacao</th><th data-col='6'>Score percentil medio</th><th data-col='7'>Score percentil mediano</th><th data-col='8'>Prob bootstrap media acima zero</th><th data-col='9'>Prob bootstrap media acima zero media</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Diária</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5510</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5100</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3720</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5232</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5730</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,4890</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>desfavoravel_moderado_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3934</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5476</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5620</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5751</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5450</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>desfavoravel_moderado_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5643</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5500</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,6700</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,4340</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,7101</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5890</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,6640</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>desfavoravel_moderado_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,2958</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,6150</td></tr>
+<tr><td>Total</td><td>Capitulação</td><td>consolidado_mensal</td><td>todos os grupos</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Todos os Grupos</td><td></td><td></td><td></td><td>0,5115</td></tr>
+<tr><td>Total</td><td>Euforia</td><td>consolidado_mensal</td><td>todos os grupos</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Todos os Grupos</td><td></td><td></td><td></td><td>0,5164</td></tr>
+<tr><td>Total</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Total</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5620</td></tr>
+<tr><td>Total</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Total</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5751</td></tr>
+<tr><td>Total</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Total</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td></td><td></td><td></td><td>0,5450</td></tr>
+<tr><td>Total</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>desfavoravel_moderado_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Total</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Mensais</td><td></td><td></td><td></td><td>0,5643</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,5429</td><td>0,2000</td><td></td><td>0,3720</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5510</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5100</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5232</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,0000</td><td>0,0000</td><td></td><td>0,3934</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5730</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,4890</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5476</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,5429</td><td>0,2000</td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5620</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5751</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,0286</td><td>0,0000</td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5450</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,5643</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,5143</td><td>0,2000</td><td></td><td>0,4340</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5500</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,6700</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,7101</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td>0,1143</td><td>0,0000</td><td></td><td>0,2958</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td>0,6667</td><td>1,0000</td><td></td><td>0,5890</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,6640</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td>1,0000</td><td>1,0000</td><td></td><td>0,6150</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3040</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,2400</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,6090</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3270</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3800</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,5010</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,4050</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,5150</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3680</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,1780</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5510</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5730</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5100</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,4890</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4880</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5860</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6320</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6020</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5360</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6330</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5330</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4550</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4550</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4410</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4170</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5010</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4600</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4250</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4500</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5010</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5020</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6150</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6860</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6590</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6000</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7080</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5160</td><td></td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4490</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,2990</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,1880</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,6430</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3610</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3600</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,4890</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3740</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,5040</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3200</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,1640</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5860</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5860</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5620</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5450</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5340</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6580</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6890</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6620</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6210</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7170</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5890</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4870</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4890</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4820</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4610</td><td></td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5120</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4740</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4590</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4600</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5400</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4970</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6410</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6960</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6340</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6480</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6880</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5400</td><td></td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4940</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3480</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,2660</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,6740</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,4160</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,4660</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,3660</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,2890</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,4830</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,2120</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td>0,1290</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5500</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,5890</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,6700</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td>0,6640</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6750</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7800</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,8070</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7930</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7610</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,8320</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7300</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5050</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6730</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6290</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6420</td><td></td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6940</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5410</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4900</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5170</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5870</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6060</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6850</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7730</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7320</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,6940</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,7270</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,5940</td><td></td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td>0,4340</td><td></td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,3720</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,3934</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5510</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5730</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5100</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,4890</td></tr>
+<tr><td>Diária</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,5232</td></tr>
+<tr><td>Diária</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,5476</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,3702</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5860</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5620</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5450</td></tr>
+<tr><td>Mensal</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,5751</td></tr>
+<tr><td>Mensal</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,5643</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,4340</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td></td><td></td><td></td><td></td><td></td><td>0,2958</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5500</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,5890</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,6700</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td></td><td></td><td></td><td></td><td></td><td>0,6640</td></tr>
+<tr><td>Anual</td><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,7101</td></tr>
+<tr><td>Anual</td><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td></td><td></td><td></td><td></td><td></td><td>0,6150</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

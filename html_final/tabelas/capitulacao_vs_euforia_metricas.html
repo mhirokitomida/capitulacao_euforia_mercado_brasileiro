@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capitulação vs Euforia — métricas comparativas</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .table-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .table-subtitle {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .table-search input,
+    .page-size select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    .table-meta {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pager {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pager button {
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pager button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .table-note {
+      margin: 8px 0 12px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+      max-height: 78vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 980px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: var(--soft-2); }
+
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #eef2f7;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #fcfdff; }
+    tbody tr:hover { background: #f8fbff; }
+
+    .sort-indicator {
+      margin-left: 6px;
+      color: #64748b;
+      font-size: 11px;
+    }
+
+    .empty-state {
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 880px) {
+      .table-toolbar { grid-template-columns: 1fr; }
+      .pager { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="table-title">Capitulação vs Euforia — métricas comparativas</div>
+  <div class="table-subtitle">Métricas comparativas em formato longo.</div>
+  
+
+  <div class="table-toolbar">
+    <div class="table-search">
+      <input type="text" id="tableSearch" placeholder="Buscar na tabela...">
+    </div>
+    <div class="page-size">
+      <select id="pageSize">
+        <option value="25">25 linhas</option>
+        <option value="50" selected>50 linhas</option>
+        <option value="100">100 linhas</option>
+        <option value="250">250 linhas</option>
+        <option value="500">500 linhas</option>
+      </select>
+    </div>
+    <div class="table-meta">
+      Linhas: <span id="visibleCount">0</span> / <span id="totalCount">0</span>
+    </div>
+    <div class="pager">
+      <button id="prevPage">Anterior</button>
+      <span id="pageInfo" class="table-meta">1 / 1</span>
+      <button id="nextPage">Próxima</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tabela">
+      <thead>
+        <tr><th data-col='0'>Frequência</th><th data-col='1'>Metrica</th><th data-col='2'>Nome metrica</th><th data-col='3'>Criterio</th><th data-col='4'>Valor capitulacao</th><th data-col='5'>Valor euforia</th><th data-col='6'>Diferenca capitulacao menos euforia</th><th data-col='7'>Vencedor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Diária</td><td>calmar_simplificado</td><td>Calmar simplificado</td><td>maior_melhor</td><td>0,62</td><td>0,48</td><td>0,14</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>downside_vol_anualizada</td><td>Downside volatility anualizada</td><td>menor_melhor</td><td>0,04</td><td>0,05</td><td>-0,01</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>max_drawdown_abs</td><td>Drawdown máximo absoluto</td><td>menor_melhor</td><td>0,16</td><td>0,20</td><td>-0,05</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>retorno_acumulado</td><td>Retorno acumulado</td><td>maior_melhor</td><td>2,81</td><td>2,79</td><td>0,02</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>retorno_anualizado</td><td>Retorno anualizado</td><td>maior_melhor</td><td>0,10</td><td>0,10</td><td>0,00</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>sharpe_simplificado</td><td>Sharpe simplificado</td><td>maior_melhor</td><td>1,66</td><td>1,50</td><td>0,17</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>sortino_simplificado</td><td>Sortino simplificado</td><td>maior_melhor</td><td>2,33</td><td>2,04</td><td>0,29</td><td>capitulacao</td></tr>
+<tr><td>Diária</td><td>volatilidade_anualizada</td><td>Volatilidade anualizada</td><td>menor_melhor</td><td>0,06</td><td>0,06</td><td>-0,01</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>calmar_simplificado</td><td>Calmar simplificado</td><td>maior_melhor</td><td>0,79</td><td>0,60</td><td>0,18</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>downside_vol_anualizada</td><td>Downside volatility anualizada</td><td>menor_melhor</td><td>0,04</td><td>0,04</td><td>-0,01</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>max_drawdown_abs</td><td>Drawdown máximo absoluto</td><td>menor_melhor</td><td>0,12</td><td>0,16</td><td>-0,04</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>retorno_acumulado</td><td>Retorno acumulado</td><td>maior_melhor</td><td>2,81</td><td>2,79</td><td>0,02</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>retorno_anualizado</td><td>Retorno anualizado</td><td>maior_melhor</td><td>0,10</td><td>0,10</td><td>0,00</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>sharpe_simplificado</td><td>Sharpe simplificado</td><td>maior_melhor</td><td>1,58</td><td>1,46</td><td>0,13</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>sortino_simplificado</td><td>Sortino simplificado</td><td>maior_melhor</td><td>2,53</td><td>2,12</td><td>0,41</td><td>capitulacao</td></tr>
+<tr><td>Mensal</td><td>volatilidade_anualizada</td><td>Volatilidade anualizada</td><td>menor_melhor</td><td>0,06</td><td>0,06</td><td>-0,01</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>calmar_simplificado</td><td>Calmar simplificado</td><td>maior_melhor</td><td>8,16</td><td>5,42</td><td>2,74</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>downside_vol_anualizada</td><td>Downside volatility anualizada</td><td>menor_melhor</td><td>0,00</td><td>0,00</td><td>-0,00</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>max_drawdown_abs</td><td>Drawdown máximo absoluto</td><td>menor_melhor</td><td>0,01</td><td>0,02</td><td>-0,01</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>retorno_acumulado</td><td>Retorno acumulado</td><td>maior_melhor</td><td>2,81</td><td>2,79</td><td>0,02</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>retorno_anualizado</td><td>Retorno anualizado</td><td>maior_melhor</td><td>0,09</td><td>0,09</td><td>0,00</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>sharpe_simplificado</td><td>Sharpe simplificado</td><td>maior_melhor</td><td>1,40</td><td>1,38</td><td>0,02</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>sortino_simplificado</td><td>Sortino simplificado</td><td>maior_melhor</td><td>32,04</td><td>21,45</td><td>10,59</td><td>capitulacao</td></tr>
+<tr><td>Anual</td><td>volatilidade_anualizada</td><td>Volatilidade anualizada</td><td>menor_melhor</td><td>0,07</td><td>0,07</td><td>-0,00</td><td>capitulacao</td></tr>
+      </tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>
+  </div>
+
+  <script>
+    (function() {
+      const input = document.getElementById("tableSearch");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const prevPage = document.getElementById("prevPage");
+      const nextPage = document.getElementById("nextPage");
+      const pageInfo = document.getElementById("pageInfo");
+      const table = document.getElementById("tabela");
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      const headers = Array.from(table.querySelectorAll("thead th"));
+      const visibleCount = document.getElementById("visibleCount");
+      const totalCount = document.getElementById("totalCount");
+      const emptyState = document.getElementById("emptyState");
+
+      let filteredRows = rows.slice();
+      let currentPage = 1;
+      let sortState = { col: null, dir: "asc" };
+
+      totalCount.textContent = rows.length;
+
+      function normalize(text) {
+        return String(text || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+      }
+
+      function parseSortableValue(value) {
+        const raw = String(value || "").trim();
+
+        const numericCandidate = raw
+          .replace(/R\$\s*/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, ".")
+          .replace(/%/g, "")
+          .replace(/[^0-9\-\.]/g, "");
+
+        const asNumber = Number(numericCandidate);
+        if (!Number.isNaN(asNumber) && numericCandidate !== "") return asNumber;
+
+        return raw.toLowerCase();
+      }
+
+      function getCellValue(row, colIndex) {
+        const cell = row.children[colIndex];
+        return cell ? cell.innerText.trim() : "";
+      }
+
+      function clearIndicators() {
+        headers.forEach(th => {
+          th.querySelectorAll(".sort-indicator").forEach(el => el.remove());
+        });
+      }
+
+      function addIndicator(th, dir) {
+        const span = document.createElement("span");
+        span.className = "sort-indicator";
+        span.textContent = dir === "asc" ? "▲" : "▼";
+        th.appendChild(span);
+      }
+
+      function applyFilter() {
+        const q = normalize(input.value);
+
+        filteredRows = rows.filter(row => normalize(row.innerText).includes(q));
+
+        if (sortState.col !== null) {
+          const multiplier = sortState.dir === "asc" ? 1 : -1;
+          filteredRows.sort((a, b) => {
+            const av = parseSortableValue(getCellValue(a, sortState.col));
+            const bv = parseSortableValue(getCellValue(b, sortState.col));
+            if (av < bv) return -1 * multiplier;
+            if (av > bv) return 1 * multiplier;
+            return 0;
+          });
+        }
+
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const pageSize = Number(pageSizeSelect.value) || 50;
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageRows = new Set(filteredRows.slice(start, end));
+
+        rows.forEach(row => {
+          row.style.display = pageRows.has(row) ? "" : "none";
+        });
+
+        visibleCount.textContent = filteredRows.length;
+        emptyState.style.display = filteredRows.length === 0 ? "block" : "none";
+        pageInfo.textContent = `${currentPage} / ${totalPages}`;
+        prevPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+
+      function sortByColumn(colIndex) {
+        if (sortState.col === colIndex) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.col = colIndex;
+          sortState.dir = "asc";
+        }
+
+        clearIndicators();
+        addIndicator(headers[colIndex], sortState.dir);
+
+        applyFilter();
+      }
+
+      input.addEventListener("input", applyFilter);
+      pageSizeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        renderPage();
+      });
+
+      prevPage.addEventListener("click", () => {
+        currentPage = Math.max(1, currentPage - 1);
+        renderPage();
+      });
+
+      nextPage.addEventListener("click", () => {
+        currentPage += 1;
+        renderPage();
+      });
+
+      headers.forEach((th, idx) => {
+        th.addEventListener("click", () => sortByColumn(idx));
+      });
+
+      applyFilter();
+    })();
+  </script>
+</body>
+</html>

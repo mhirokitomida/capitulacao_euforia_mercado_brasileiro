@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capitulação e Euforia versus controles</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --soft: #f8fafc;
+      --soft-2: #f1f5f9;
+      --brand: #172554;
+      --brand-2: #1d4ed8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: var(--ink);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    body { padding: 14px; }
+
+    .chart-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .chart-subtitle {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(210px, 1fr));
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .control-group {
+      min-width: 0;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 0.82rem;
+      color: #334155;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    select,
+    .multi-button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 0.92rem;
+      text-align: left;
+    }
+
+    .multi-wrap {
+      position: relative;
+    }
+
+    .multi-button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .multi-panel {
+      position: absolute;
+      z-index: 50;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 320px;
+      overflow: auto;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+      padding: 10px;
+      display: none;
+    }
+
+    .multi-panel.open {
+      display: block;
+    }
+
+    .multi-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .multi-actions button {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 7px 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .multi-option {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 4px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .multi-option:last-child {
+      border-bottom: 0;
+    }
+
+    .chart-wrap {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      background: #fff;
+    }
+
+    #chart {
+      width: 100%;
+      min-height: 640px;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      display: none;
+    }
+
+    @media (max-width: 1050px) {
+      .controls { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .controls { grid-template-columns: 1fr; }
+      #chart { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-title">Capitulação e Euforia versus controles</div>
+  <div class="chart-subtitle">Percentual de controles superados por cada estratégia real. O gráfico não é empilhado: cada métrica mostra uma leitura objetiva de superação.</div>
+
+  <div class="controls">
+    <div class="control-group" id="metricControl">
+      <label>Métrica</label>
+      <select id="metricSelect"></select>
+    </div>
+
+    <div class="control-group" id="frequencyControl">
+      <label>Frequência</label>
+      <select id="frequencySelect"></select>
+    </div>
+
+    <div class="control-group" id="windowControl">
+      <label>Janela</label>
+      <select id="windowSelect"></select>
+    </div>
+
+    <div class="control-group" id="categoryControl">
+      <label>Categoria</label>
+      <div id="categoryMulti" class="multi-wrap"></div>
+    </div>
+
+    <div class="control-group" id="strategyControl">
+      <label>Estratégias</label>
+      <div id="strategyMulti" class="multi-wrap"></div>
+    </div>
+
+    <div class="control-group" id="groupControl">
+      <label>Comparador / grupo</label>
+      <div id="groupMulti" class="multi-wrap"></div>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div id="chart"></div>
+    <div id="emptyState" class="empty">Nenhum dado disponível para os filtros selecionados.</div>
+  </div>
+
+  <script>
+    const CONFIG = {"title": "Capitulação e Euforia versus controles", "subtitle": "Percentual de controles superados por cada estratégia real. O gráfico não é empilhado: cada métrica mostra uma leitura objetiva de superação.", "chartType": "bar", "xField": "label", "yField": "valor", "labelField": "label", "strategyField": "estrategia", "categoryField": "categoria", "frequencyField": "frequencia", "groupField": "grupo", "windowField": null, "metrics": [{"field": "pct_replicas_retorno_acumulado_real_superou_controle", "label": "Aleatórias — retorno acumulado maior"}, {"field": "pct_replicas_retorno_anualizado_real_superou_controle", "label": "Aleatórias — retorno anualizado maior"}, {"field": "pct_replicas_sharpe_real_superou_controle", "label": "Aleatórias — Sharpe maior"}, {"field": "pct_replicas_sortino_real_superou_controle", "label": "Aleatórias — Sortino maior"}, {"field": "pct_replicas_calmar_real_superou_controle", "label": "Aleatórias — Calmar maior"}, {"field": "pct_controles_retorno_acumulado_real_superou_controle", "label": "Mensais — retorno acumulado maior"}, {"field": "pct_controles_retorno_anualizado_real_superou_controle", "label": "Mensais — retorno anualizado maior"}, {"field": "pct_controles_sharpe_real_superou_controle", "label": "Mensais — Sharpe maior"}, {"field": "pct_controles_sortino_real_superou_controle", "label": "Mensais — Sortino maior"}, {"field": "pct_controles_calmar_real_superou_controle", "label": "Mensais — Calmar maior"}], "initialMetric": "pct_replicas_retorno_acumulado_real_superou_controle", "useStrategy": true, "useCategory": true, "useFrequency": true, "useGroup": false, "useWindow": false, "topN": 40, "sortAsc": false, "yPercent": true, "aggregateBars": true, "categories": ["Capitulação", "Euforia"], "strategies": ["Capitulação", "Euforia"], "frequencies": ["Diária", "Mensal", "Anual"], "groups": ["Total"], "windows": [], "windowByFrequency": {}, "data": [{"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Anual", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": 0.7333333333333333, "pct_replicas_retorno_anualizado_real_superou_controle": 0.7333333333333333, "pct_replicas_sharpe_real_superou_controle": 0.7333333333333333, "pct_replicas_sortino_real_superou_controle": 0.7333333333333333, "pct_replicas_calmar_real_superou_controle": 1.0, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Diária", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": 0.7333333333333333, "pct_replicas_retorno_anualizado_real_superou_controle": 0.7333333333333333, "pct_replicas_sharpe_real_superou_controle": 0.7333333333333333, "pct_replicas_sortino_real_superou_controle": 0.7333333333333333, "pct_replicas_calmar_real_superou_controle": 1.0, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Mensal", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": 0.7333333333333333, "pct_replicas_retorno_anualizado_real_superou_controle": 0.7333333333333333, "pct_replicas_sharpe_real_superou_controle": 0.7333333333333333, "pct_replicas_sortino_real_superou_controle": 0.7333333333333333, "pct_replicas_calmar_real_superou_controle": 1.0, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Anual", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": 0.6666666666666666, "pct_replicas_retorno_anualizado_real_superou_controle": 0.6666666666666666, "pct_replicas_sharpe_real_superou_controle": 0.6666666666666666, "pct_replicas_sortino_real_superou_controle": 0.6666666666666666, "pct_replicas_calmar_real_superou_controle": 0.7333333333333333, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Diária", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": 0.6666666666666666, "pct_replicas_retorno_anualizado_real_superou_controle": 0.6666666666666666, "pct_replicas_sharpe_real_superou_controle": 0.6666666666666666, "pct_replicas_sortino_real_superou_controle": 0.6666666666666666, "pct_replicas_calmar_real_superou_controle": 0.6666666666666666, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Mensal", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": 0.6666666666666666, "pct_replicas_retorno_anualizado_real_superou_controle": 0.6666666666666666, "pct_replicas_sharpe_real_superou_controle": 0.6666666666666666, "pct_replicas_sortino_real_superou_controle": 0.6666666666666666, "pct_replicas_calmar_real_superou_controle": 0.6666666666666666, "pct_controles_retorno_acumulado_real_superou_controle": null, "pct_controles_retorno_anualizado_real_superou_controle": null, "pct_controles_sharpe_real_superou_controle": null, "pct_controles_sortino_real_superou_controle": null, "pct_controles_calmar_real_superou_controle": null}, {"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Anual", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}, {"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Diária", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}, {"estrategia": "Capitulação", "categoria": "Capitulação", "frequencia": "Mensal", "grupo": "Total", "label": "Capitulação", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Anual", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Diária", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}, {"estrategia": "Euforia", "categoria": "Euforia", "frequencia": "Mensal", "grupo": "Total", "label": "Euforia", "pct_replicas_retorno_acumulado_real_superou_controle": null, "pct_replicas_retorno_anualizado_real_superou_controle": null, "pct_replicas_sharpe_real_superou_controle": null, "pct_replicas_sortino_real_superou_controle": null, "pct_replicas_calmar_real_superou_controle": null, "pct_controles_retorno_acumulado_real_superou_controle": 1.0, "pct_controles_retorno_anualizado_real_superou_controle": 1.0, "pct_controles_sharpe_real_superou_controle": 1.0, "pct_controles_sortino_real_superou_controle": 1.0, "pct_controles_calmar_real_superou_controle": 1.0}]};
+
+    const DATA = CONFIG.data || [];
+    const METRICS = CONFIG.metrics || [];
+    const chart = document.getElementById("chart");
+    const emptyState = document.getElementById("emptyState");
+
+    const metricControl = document.getElementById("metricControl");
+    const frequencyControl = document.getElementById("frequencyControl");
+    const windowControl = document.getElementById("windowControl");
+    const categoryControl = document.getElementById("categoryControl");
+    const strategyControl = document.getElementById("strategyControl");
+    const groupControl = document.getElementById("groupControl");
+
+    const metricSelect = document.getElementById("metricSelect");
+    const frequencySelect = document.getElementById("frequencySelect");
+    const windowSelect = document.getElementById("windowSelect");
+
+    let selectedCategories = new Set(CONFIG.categories || []);
+    let selectedStrategies = new Set(CONFIG.strategies || []);
+    let selectedGroups = new Set(CONFIG.groups || []);
+
+    function toNumber(v) {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function unique(arr) {
+      return Array.from(new Set(arr.filter(x => x !== null && x !== undefined && x !== "")));
+    }
+
+    function makeOptions(select, items) {
+      select.innerHTML = "";
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.value || item;
+        opt.textContent = item.label || item;
+        select.appendChild(opt);
+      });
+    }
+
+    function validFrequenciesForMetric(metric) {
+      if (!CONFIG.useFrequency) return CONFIG.frequencies || [];
+
+      const allowed = new Set(CONFIG.frequencies || []);
+      const freqs = unique(DATA
+        .filter(row => {
+          if (CONFIG.useCategory && selectedCategories.size && !selectedCategories.has(String(row[CONFIG.categoryField]))) return false;
+          if (CONFIG.useStrategy && selectedStrategies.size && !selectedStrategies.has(String(row[CONFIG.strategyField]))) return false;
+          if (CONFIG.useGroup && selectedGroups.size && !selectedGroups.has(String(row[CONFIG.groupField]))) return false;
+          return toNumber(row[metric]) !== null;
+        })
+        .map(row => String(row[CONFIG.frequencyField] || ""))
+        .filter(freq => allowed.has(freq)));
+
+      return freqs;
+    }
+
+    function updateFrequencyOptions() {
+      if (!CONFIG.useFrequency) return;
+
+      const metric = activeMetric();
+      const current = frequencySelect.value;
+      const freqs = validFrequenciesForMetric(metric);
+
+      makeOptions(frequencySelect, freqs);
+      if (freqs.includes(current)) frequencySelect.value = current;
+      else if (freqs.length) frequencySelect.value = freqs[0];
+
+      updateWindowOptions();
+    }
+
+    function updateWindowOptions() {
+      if (!CONFIG.useWindow) return;
+      const freq = frequencySelect.value;
+      let windows = CONFIG.windows || [];
+      if (CONFIG.useFrequency && CONFIG.windowByFrequency && CONFIG.windowByFrequency[freq]) {
+        windows = CONFIG.windowByFrequency[freq];
+      }
+      const current = windowSelect.value;
+      makeOptions(windowSelect, windows);
+      if (windows.includes(current)) windowSelect.value = current;
+      else if (windows.length) windowSelect.value = windows[0];
+    }
+
+    function metricDecimals(field) {
+      const label = metricLabel(field).toLowerCase();
+      const f = String(field || "").toLowerCase();
+      if (label.includes("número") || label.includes("aportes realizados") || f.startsWith("n_") || f.includes("quantidade") || f.includes("linhas")) return ".0f";
+      if (label.includes("bootstrap") || f.includes("prob_bootstrap")) return ".2%";
+      if (label.includes("score") || f.includes("score")) return ".4f";
+      if (CONFIG.yPercent || label.includes("%") || label.includes("percentual") || label.includes("drawdown") || label.includes("volatilidade")) return ".2%";
+      return ".4f";
+    }
+
+    function buildMulti(rootId, items, selectedSet, labelAll, onChange) {
+      const root = document.getElementById(rootId);
+      root.innerHTML = "";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "multi-button";
+
+      const label = document.createElement("span");
+      const arrow = document.createElement("span");
+      arrow.textContent = "▾";
+      button.appendChild(label);
+      button.appendChild(arrow);
+
+      const panel = document.createElement("div");
+      panel.className = "multi-panel";
+
+      const actions = document.createElement("div");
+      actions.className = "multi-actions";
+
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.textContent = "Selecionar tudo";
+
+      const noneBtn = document.createElement("button");
+      noneBtn.type = "button";
+      noneBtn.textContent = "Deselecionar tudo";
+
+      actions.appendChild(allBtn);
+      actions.appendChild(noneBtn);
+      panel.appendChild(actions);
+
+      const updateLabel = () => {
+        if (selectedSet.size === 0) {
+          label.textContent = "Nenhum item";
+        } else if (selectedSet.size === items.length) {
+          label.textContent = labelAll;
+        } else {
+          label.textContent = `${selectedSet.size} selecionado(s)`;
+        }
+      };
+
+      const renderChecks = () => {
+        panel.querySelectorAll(".multi-option").forEach(el => el.remove());
+
+        items.forEach(item => {
+          const row = document.createElement("label");
+          row.className = "multi-option";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = selectedSet.has(item);
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) selectedSet.add(item);
+            else selectedSet.delete(item);
+            updateLabel();
+            onChange();
+          });
+
+          const txt = document.createElement("span");
+          txt.textContent = item;
+
+          row.appendChild(checkbox);
+          row.appendChild(txt);
+          panel.appendChild(row);
+        });
+      };
+
+      allBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        items.forEach(item => selectedSet.add(item));
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      noneBtn.addEventListener("click", () => {
+        selectedSet.clear();
+        renderChecks();
+        updateLabel();
+        onChange();
+      });
+
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".multi-panel.open").forEach(p => {
+          if (p !== panel) p.classList.remove("open");
+        });
+        panel.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (ev) => {
+        if (!root.contains(ev.target)) panel.classList.remove("open");
+      });
+
+      root.appendChild(button);
+      root.appendChild(panel);
+      renderChecks();
+      updateLabel();
+    }
+
+    function metricLabel(field) {
+      const found = METRICS.find(m => m.field === field);
+      return found ? found.label : field;
+    }
+
+    function activeMetric() {
+      return metricSelect.value || CONFIG.initialMetric;
+    }
+
+    function filteredData() {
+      const metric = activeMetric();
+      const freq = frequencySelect.value;
+      const windowValue = windowSelect.value;
+
+      return DATA.filter(row => {
+        if (CONFIG.useFrequency && String(row[CONFIG.frequencyField]) !== String(freq)) return false;
+        if (CONFIG.useWindow && String(row[CONFIG.windowField]) !== String(windowValue)) return false;
+        if (CONFIG.useCategory && !selectedCategories.has(String(row[CONFIG.categoryField]))) return false;
+        if (CONFIG.useStrategy && !selectedStrategies.has(String(row[CONFIG.strategyField]))) return false;
+        if (CONFIG.useGroup && !selectedGroups.has(String(row[CONFIG.groupField]))) return false;
+
+        const value = toNumber(row[metric]);
+        return value !== null;
+      });
+    }
+
+    function sortRows(rows, metric) {
+      const mult = CONFIG.sortAsc ? 1 : -1;
+      return rows.slice().sort((a, b) => {
+        const av = toNumber(a[metric]);
+        const bv = toNumber(b[metric]);
+        if (av < bv) return -1 * mult;
+        if (av > bv) return 1 * mult;
+        return 0;
+      });
+    }
+
+    function buildLine(rows, metric) {
+      const groups = unique(rows.map(r => r[CONFIG.strategyField])).sort();
+
+      return groups.map(name => {
+        const rs = rows
+          .filter(r => r[CONFIG.strategyField] === name)
+          .sort((a, b) => String(a[CONFIG.xField]).localeCompare(String(b[CONFIG.xField])));
+
+        return {
+          type: "scatter",
+          mode: "lines",
+          name: name,
+          x: rs.map(r => r[CONFIG.xField]),
+          y: rs.map(r => toNumber(r[metric])),
+          hovertemplate: "%{x}<br>" + name + "<br>" + metricLabel(metric) + ": %{y:" + metricDecimals(metric) + "}<extra></extra>"
+        };
+      });
+    }
+
+    function aggregateRowsByLabel(rows, metric) {
+      const grouped = new Map();
+
+      rows.forEach(row => {
+        const label = String(row[CONFIG.labelField] || "").trim();
+        const value = toNumber(row[metric]);
+
+        if (!label || value === null) return;
+
+        if (!grouped.has(label)) {
+          grouped.set(label, {
+            row: Object.assign({}, row),
+            values: []
+          });
+        }
+
+        grouped.get(label).values.push(value);
+      });
+
+      const aggregated = [];
+      grouped.forEach(item => {
+        const values = item.values.filter(v => v !== null && Number.isFinite(v));
+        if (!values.length) return;
+
+        const mean = values.reduce((acc, v) => acc + v, 0) / values.length;
+        const row = Object.assign({}, item.row);
+        row[metric] = mean;
+        row._n_registros_agregados = values.length;
+        aggregated.push(row);
+      });
+
+      return aggregated;
+    }
+
+    function buildBar(rows, metric) {
+      const aggregateBars = CONFIG.aggregateBars !== false;
+      let rs = aggregateBars ? aggregateRowsByLabel(rows, metric) : rows.slice();
+      rs = sortRows(rs, metric).slice(0, CONFIG.topN || 40);
+
+      const hoverExtra = aggregateBars
+        ? "<br>Registros consolidados: %{customdata}"
+        : "";
+
+      return [{
+        type: "bar",
+        x: rs.map(r => r[CONFIG.labelField]),
+        y: rs.map(r => toNumber(r[metric])),
+        marker: { opacity: 1, line: { width: 0 } },
+        hovertemplate: "%{x}<br>" + metricLabel(metric) + ": %{y:" + metricDecimals(metric) + "}" + hoverExtra + "<extra></extra>",
+        customdata: rs.map(r => r._n_registros_agregados || 1)
+      }];
+    }
+
+    function buildBox(rows, metric) {
+      const groups = unique(rows.map(r => r[CONFIG.strategyField])).sort();
+
+      return groups.map(name => {
+        const vals = rows
+          .filter(r => r[CONFIG.strategyField] === name)
+          .map(r => toNumber(r[metric]))
+          .filter(v => v !== null);
+
+        return {
+          type: "box",
+          name: name,
+          y: vals,
+          boxpoints: false,
+          hovertemplate: name + "<br>" + metricLabel(metric) + ": %{y:" + metricDecimals(metric) + "}<extra></extra>"
+        };
+      });
+    }
+
+    function render() {
+      const metric = activeMetric();
+      const rows = filteredData();
+
+      let traces = [];
+      if (CONFIG.chartType === "line") traces = buildLine(rows, metric);
+      else if (CONFIG.chartType === "bar") traces = buildBar(rows, metric);
+      else if (CONFIG.chartType === "box") traces = buildBox(rows, metric);
+
+      emptyState.style.display = traces.length === 0 || rows.length === 0 ? "block" : "none";
+
+      const yAxis = {
+        title: { text: metricLabel(metric), standoff: 18 },
+        automargin: true,
+        tickformat: (CONFIG.yPercent || metricDecimals(metric) === ".2%") ? ".1%" : undefined,
+        showgrid: CONFIG.chartType === "bar" ? false : true,
+        zeroline: true,
+        zerolinecolor: "rgba(15, 23, 42, 0.35)",
+        zerolinewidth: 1
+      };
+
+      const layout = {
+        title: { text: CONFIG.title, x: 0.02, xanchor: "left", y: 0.98, yanchor: "top" },
+        margin: { l: 105, r: 40, t: 82, b: CONFIG.chartType === "bar" ? 180 : 112 },
+        height: 680,
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        hovermode: CONFIG.chartType === "line" ? "x unified" : "closest",
+        legend: { orientation: "v", x: 1.02, y: 1, tracegroupgap: 4 },
+        xaxis: {
+          title: CONFIG.chartType === "line" ? "Data" : "",
+          automargin: true,
+          tickangle: CONFIG.chartType === "bar" ? -32 : 0
+        },
+        yaxis: yAxis,
+        barmode: "group",
+        bargap: 0.28,
+        bargroupgap: 0.12
+      };
+
+      Plotly.react(chart, traces, layout, {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ["lasso2d", "select2d"]
+      });
+    }
+
+    function init() {
+      if (METRICS.length <= 1) {
+        metricControl.style.display = "none";
+      } else {
+        makeOptions(metricSelect, METRICS.map(m => ({ value: m.field, label: m.label })));
+        metricSelect.value = CONFIG.initialMetric;
+        metricSelect.addEventListener("change", () => {
+          updateFrequencyOptions();
+          render();
+        });
+      }
+
+      if (CONFIG.useFrequency) {
+        updateFrequencyOptions();
+        frequencySelect.addEventListener("change", () => {
+          updateWindowOptions();
+          render();
+        });
+      } else {
+        frequencyControl.style.display = "none";
+      }
+
+      if (CONFIG.useWindow) {
+        updateWindowOptions();
+        windowSelect.addEventListener("change", render);
+      } else {
+        windowControl.style.display = "none";
+      }
+
+      if (CONFIG.useCategory) {
+        buildMulti("categoryMulti", CONFIG.categories || [], selectedCategories, "Todas as categorias", () => { updateFrequencyOptions(); render(); });
+      } else {
+        categoryControl.style.display = "none";
+      }
+
+      if (CONFIG.useStrategy) {
+        buildMulti("strategyMulti", CONFIG.strategies || [], selectedStrategies, "Todas as estratégias", () => { updateFrequencyOptions(); render(); });
+      } else {
+        strategyControl.style.display = "none";
+      }
+
+      if (CONFIG.useGroup) {
+        buildMulti("groupMulti", CONFIG.groups || [], selectedGroups, "Todos os grupos", () => { updateFrequencyOptions(); render(); });
+      } else {
+        groupControl.style.display = "none";
+      }
+
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
