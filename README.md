@@ -33,6 +33,7 @@ A base final cobre o período de **2011-06-29 a 2025-12-30**, com:
 - **20.845 registros de compras por ticker**
 - **239 tickers distintos comprados**
 - **526.253 registros de posições históricas**
+- **R$ 1.199.805,43** em valor investido agregado nas bases de alocação e compras
 
 ---
 
@@ -116,7 +117,7 @@ A lógica de aportes preserva comparabilidade entre as estratégias:
 - O caixa não investido é tratado de forma padronizada  
 - As posições são acompanhadas historicamente ao longo do tempo  
 
-A versão final consolidou **276 aportes** e **20.845 compras por ticker**.
+A versão final consolidou **276 aportes**, **20.845 compras por ticker** e **R$ 1.199.805,43** em valor investido agregado nas bases de alocação e compras.
 
 ---
 
@@ -145,7 +146,9 @@ A avaliação de performance inclui:
 - Comparação contra benchmarks  
 - Comparação contra controles  
 
-No consolidado principal, a estratégia de **Capitulação** apareceu como destaque de retorno, com **291,36%**.
+Na frequência diária das métricas principais, **Capitulação** apresentou retorno acumulado de **286,62%** e retorno anualizado de **9,77%**, enquanto **Euforia** apresentou retorno acumulado de **285,07%** e retorno anualizado de **9,74%**.
+
+Na comparação direta mensal, Capitulação teve retorno acumulado de **280,75%** contra **279,23%** de Euforia, diferença de apenas **1,52%**.
 
 ---
 
@@ -161,7 +164,12 @@ O projeto não interpreta retorno isoladamente. Foram avaliadas métricas como:
 - Calmar  
 - Eficiência ajustada ao risco  
 
-Na leitura consolidada de eficiência destacada no relatório, **Capitulação** também apareceu como destaque, com métrica de **0,0474**.
+Na frequência diária das métricas principais:
+
+- **Capitulação** apresentou Sharpe de **0,0331**, Sortino de **0,0440**, Calmar alinhado de **0,6218** e drawdown máximo de **-15,71%**
+- **Euforia** apresentou Sharpe de **0,0384**, Sortino de **0,0510**, Calmar alinhado de **0,4818** e drawdown máximo de **-20,22%**
+
+Essa leitura mostra que Capitulação teve melhor retorno acumulado, retorno anualizado, drawdown e Calmar alinhado, enquanto Euforia apresentou melhor Sharpe e Sortino.
 
 ---
 
@@ -179,9 +187,18 @@ O projeto considera:
 - Sensibilidade de parâmetros  
 - Robustez por cenários  
 
-Na versão final do relatório, o painel destacou **0 evidências robustas/significativas** nos consolidados finais, o que exige cautela na interpretação estatística dos resultados.
+Na comparação direta mensal, os testes formais não sustentaram dominância estatística forte entre as famílias:
 
-Isso não invalida a leitura econômica, mas impede uma conclusão excessivamente forte sobre dominância estatística.
+- **p-valor de Wilcoxon**: **0,5325**
+- **p-valor de permutação**: **0,9755**
+- **Classificação direcional**: favorável econômica à Euforia sem significância
+
+A confirmação por bootstrap ficou próxima entre as famílias:
+
+- **Capitulação**: **51,15%**
+- **Euforia**: **51,64%**
+
+Não foram identificadas evidências robustas, significativas ou formalmente confirmadas nos consolidados disponíveis. As classificações finais ficaram em leituras favoráveis moderadas, neutras ou mistas e desfavoráveis moderadas, todas sem confirmação formal.
 
 ---
 
@@ -191,7 +208,7 @@ Além das métricas agregadas, o projeto preserva a trilha operacional das carte
 
 - Datas dos sinais  
 - Datas dos aportes  
-- Valor aportado  
+- Valor investido  
 - Tickers comprados  
 - Empresas compradas  
 - Preço médio de compra  
@@ -201,6 +218,8 @@ Além das métricas agregadas, o projeto preserva a trilha operacional das carte
 - Concentração por setor, subsetor e segmento  
 
 Essa camada permite entender **como** o resultado foi construído, e não apenas qual foi o resultado final.
+
+O ticker mais relevante por valor ou contagem agregada foi **AZZA3**, com métrica de **R$ 1.709,52**, enquanto a principal classificação setorial identificada foi **Consumo Cíclico**, com métrica de **R$ 28.446,12**.
 
 ---
 
@@ -213,16 +232,23 @@ Essa camada permite entender **como** o resultado foi construído, e não apenas
 - A base final possui **20.845 compras por ticker**
 - Foram comprados **239 tickers distintos**
 - A análise de posições históricas contém **526.253 registros**
-- A estratégia de **Capitulação** teve o maior destaque de retorno consolidado, com **291,36%**
-- A melhor métrica de eficiência destacada também apareceu em **Capitulação**, com **0,0474**
-- A inferência consolidada indicou **0 evidências robustas/significativas**
+- O valor investido agregado nas bases de alocação e compras somou aproximadamente **R$ 1.199.805,43**
+- Na frequência diária, **Capitulação** teve retorno acumulado de **286,62%**, contra **285,07%** de **Euforia**
+- Na frequência diária, **Capitulação** teve retorno anualizado de **9,77%**, contra **9,74%** de **Euforia**
+- A leitura de drawdown favoreceu **Capitulação**, com **-15,71%**, contra **-20,22%** de **Euforia**
+- O Calmar alinhado favoreceu **Capitulação**, com **0,6218**, contra **0,4818** de **Euforia**
+- A leitura de Sharpe e Sortino favoreceu **Euforia**, com Sharpe de **0,0384** e Sortino de **0,0510**, contra **0,0331** e **0,0440** de **Capitulação**
+- Na comparação direta mensal, Capitulação teve retorno acumulado de **280,75%**, contra **279,23%** de Euforia
+- Os testes formais não indicaram significância estatística forte: Wilcoxon **0,5325** e permutação **0,9755**
+- A confirmação por bootstrap ficou próxima: **51,15%** para Capitulação e **51,64%** para Euforia
+- O score médio de evidência favoreceu **Capitulação**, com **0,5760**, contra **0,3312** de Euforia
 - A leitura final exige combinar retorno, risco, controles, inferência e composição
 
 👉 Isso sugere que:
 
-> Capitulação apresentou melhor destaque econômico no consolidado principal,  
-> mas a interpretação precisa ser feita com cautela estatística,  
-> usando benchmarks, controles e composição para separar sinal real de efeito amostral.
+> Capitulação apresentou melhor leitura em retorno acumulado, retorno anualizado, drawdown e Calmar alinhado,  
+> enquanto Euforia apresentou melhor Sharpe e Sortino.  
+> A diferença de retorno entre as duas famílias foi pequena, e a inferência estatística não confirmou dominância formal de uma estratégia sobre a outra.
 
 ---
 
@@ -240,7 +266,7 @@ O projeto inclui um relatório HTML interativo com:
 - 🧪 Gráficos de inferência estatística  
 - 🔁 Gráficos de robustez e sensibilidade  
 - 🧾 Timeline de sinais e aportes  
-- 💰 Valor aportado por estratégia  
+- 💰 Valor investido por estratégia  
 - 🏢 Concentração por empresa  
 - 🧭 Concentração por setor, subsetor e segmento  
 - 🔥 Heatmaps de compras e concentração  
@@ -264,6 +290,7 @@ O projeto inclui um relatório HTML interativo com:
 - A ausência de evidência estatística robusta exige cautela na interpretação  
 - Resultados econômicos e significância estatística não são a mesma coisa  
 - A composição das carteiras deve ser analisada para identificar concentração involuntária  
+- Uma métrica isolada não define a superioridade de uma estratégia  
 - O projeto busca evidência empírica comparativa, não causalidade definitiva  
 
 ---
@@ -273,8 +300,10 @@ O projeto inclui um relatório HTML interativo com:
 - A comparação entre **Capitulação** e **Euforia** não deve ser feita apenas por retorno acumulado  
 - Retorno, risco, drawdown, Sharpe, Sortino e Calmar precisam ser lidos em conjunto  
 - Benchmarks, controles aleatórios e controles mensais ajudam a separar sinal de calendário  
-- Capitulação apareceu como destaque econômico consolidado na versão final do relatório  
-- A inferência estatística pede cautela, com **0 evidências robustas/significativas** nos consolidados finais  
+- Capitulação apresentou melhor retorno acumulado, retorno anualizado, drawdown máximo e Calmar alinhado  
+- Euforia apresentou melhor Sharpe e Sortino  
+- A diferença de retorno entre as duas famílias foi pequena na comparação direta  
+- A inferência estatística pede cautela, sem evidência robusta, significativa ou formalmente confirmada nos consolidados finais  
 - A trilha entre sinal, aporte, compra e posição melhora a auditabilidade do backtest  
 - A análise de concentração por empresa e setor é essencial para entender a origem econômica dos resultados  
 - Estratégias de extremos podem gerar resultados interessantes, mas exigem validação contra controles  
@@ -288,9 +317,11 @@ O estudo reforça uma ideia central:
 
 > Estratégias de extremos de mercado não devem ser avaliadas apenas pelo retorno final, mas pela combinação entre desempenho, risco, controles, inferência e composição.
 
-A estratégia de **Capitulação** apareceu como destaque econômico no consolidado principal, com **291,36%** de retorno e melhor métrica de eficiência destacada, em **0,0474**. Isso sugere que comprar momentos de estresse extremo pode ter produzido uma trajetória relevante dentro do período analisado.
+Na frequência diária das métricas principais, **Capitulação** apresentou retorno acumulado de **286,62%**, retorno anualizado de **9,77%**, drawdown máximo de **-15,71%** e Calmar alinhado de **0,6218**. **Euforia** apresentou retorno acumulado de **285,07%**, retorno anualizado de **9,74%**, drawdown máximo de **-20,22%** e Calmar alinhado de **0,4818**.
 
-Ao mesmo tempo, a leitura estatística exige cautela. O painel final destacou **0 evidências robustas/significativas**, o que impede transformar o resultado econômico em uma conclusão definitiva de dominância estatística.
+Por outro lado, **Euforia** teve melhor leitura em Sharpe e Sortino, com **0,0384** e **0,0510**, contra **0,0331** e **0,0440** de **Capitulação**.
+
+Na comparação direta mensal, Capitulação teve retorno acumulado de **280,75%**, contra **279,23%** de Euforia, diferença de apenas **1,52%**. Os testes formais não sustentaram dominância estatística forte, com p-valor de Wilcoxon de **0,5325** e p-valor de permutação de **0,9755**.
 
 A principal contribuição do projeto é mostrar que a pergunta correta não é apenas:
 
@@ -300,4 +331,4 @@ Mas sim:
 
 > “Esse resultado sobrevive à análise de risco, benchmarks, controles, inferência e composição?”
 
-Em termos práticos, o relatório transforma uma hipótese intuitiva sobre medo e euforia em uma avaliação quantitativa, auditável e interpretável por camadas.
+Em termos práticos, o relatório transforma uma hipótese intuitiva sobre medo e euforia em uma avaliação quantitativa, auditável e interpretável por camadas. A leitura final não é que uma estratégia venceu de forma absoluta, mas que **Capitulação e Euforia produziram perfis de resultado diferentes**, com vantagens relativas distintas e necessidade de validação por risco, controles, inferência e composição.

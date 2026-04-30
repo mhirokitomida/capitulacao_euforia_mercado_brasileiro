@@ -12,7 +12,8 @@
   "n_empresas_concentracao": 229,
   "n_evidencias_robustas": 0,
   "n_evidencias_sensiveis": 0,
-  "melhor_retorno": "capitulacao",
-  "melhor_eficiencia": "capitulacao",
-  "menor_drawdown": "N/A"
+  "n_sem_confirmacao_formal": 38,
+  "melhor_retorno": "Capitulação",
+  "melhor_eficiencia": "Euforia",
+  "menor_drawdown": "Capitulação"
 }

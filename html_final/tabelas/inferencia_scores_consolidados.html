@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tabela do gráfico — retorno acumulado</title>
+  <title>Inferência — scores de evidência consolidados</title>
   <style>
     :root {
       --bg: #ffffff;
@@ -156,8 +156,8 @@
   </style>
 </head>
 <body>
-  <div class="table-title">Tabela do gráfico — retorno acumulado</div>
-  <div class="table-subtitle">Tabela executiva usada para a leitura de retorno acumulado por estratégia.</div>
+  <div class="table-title">Inferência — scores de evidência consolidados</div>
+  <div class="table-subtitle">Scores consolidados de evidência em tabela compacta.</div>
   
 
   <div class="table-toolbar">
@@ -186,35 +186,19 @@
   <div class="table-wrap">
     <table id="tabela">
       <thead>
-        <tr><th data-col='0'>Estratégia</th><th data-col='1'>N periodos</th><th data-col='2'>Retorno acumulado</th><th data-col='3'>Retorno equivalente</th><th data-col='4'>Data inicio</th><th data-col='5'>Data fim</th></tr>
+        <tr><th data-col='0'>Estratégia de referência</th><th data-col='1'>Tipo comparacao</th><th data-col='2'>Grupo comparacao</th><th data-col='3'>Score médio de evidência</th><th data-col='4'>Classificação da evidência</th><th data-col='5'>Label grupo comparacao</th><th data-col='6'>N evidencias</th></tr>
       </thead>
       <tbody>
-        <tr><td>Aleatória da Capitulação #1</td><td>3.599</td><td>2,87%</td><td>9,77%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Capitulação #2</td><td>3.599</td><td>2,91%</td><td>9,86%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Capitulação #3</td><td>3.599</td><td>2,77%</td><td>9,58%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Capitulação #4</td><td>3.599</td><td>2,83%</td><td>9,70%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Capitulação #5</td><td>3.599</td><td>2,83%</td><td>9,70%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Euforia #1</td><td>3.599</td><td>2,85%</td><td>9,74%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Euforia #2</td><td>3.599</td><td>2,85%</td><td>9,74%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Euforia #3</td><td>3.599</td><td>2,80%</td><td>9,64%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Euforia #4</td><td>3.599</td><td>2,85%</td><td>9,73%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Aleatória da Euforia #5</td><td>3.599</td><td>2,90%</td><td>9,85%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Capitulação</td><td>3.599</td><td>2,81%</td><td>9,66%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Euforia</td><td>3.599</td><td>2,79%</td><td>9,63%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 20 Aportes Mensais Carteira 1 (Carteira 1)</td><td>3.600</td><td>2,77%</td><td>9,58%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 20 Aportes Mensais Carteira 2 (Carteira 2)</td><td>3.600</td><td>2,79%</td><td>9,61%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 20 Aportes Mensais Carteira 3 (Carteira 3)</td><td>3.600</td><td>2,78%</td><td>9,60%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 20 Aportes Mensais Carteira 4 (Carteira 4)</td><td>3.600</td><td>2,74%</td><td>9,51%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 20 Aportes Mensais Carteira 5 (Carteira 5)</td><td>3.600</td><td>2,74%</td><td>9,52%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 30 Aportes Mensais Carteira 1 (Carteira 1)</td><td>3.600</td><td>2,68%</td><td>9,40%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 30 Aportes Mensais Carteira 2 (Carteira 2)</td><td>3.600</td><td>2,66%</td><td>9,36%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 30 Aportes Mensais Carteira 3 (Carteira 3)</td><td>3.600</td><td>2,68%</td><td>9,39%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 30 Aportes Mensais Carteira 4 (Carteira 4)</td><td>3.600</td><td>2,70%</td><td>9,44%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Aleatórias 30 Aportes Mensais Carteira 5 (Carteira 5)</td><td>3.600</td><td>2,65%</td><td>9,34%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Acoes Elegiveis Aportes Mensais (Carteira 1)</td><td>3.600</td><td>2,73%</td><td>9,50%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>CDI-Only</td><td>3.600</td><td>2,74%</td><td>9,52%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Ibovespa Aportes Mensais (Carteira 1)</td><td>3.600</td><td>2,77%</td><td>9,59%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
-<tr><td>Ibovespa Buy and Hold</td><td>3.600</td><td>1,58%</td><td>6,77%</td><td>2011-06-29</td><td>2025-12-30</td></tr>
+        <tr><td>Capitulação</td><td>consolidado_mensal</td><td>todos os grupos</td><td>0,5760</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Todos os Grupos</td><td>4</td></tr>
+<tr><td>Euforia</td><td>consolidado_mensal</td><td>todos os grupos</td><td>0,3312</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Todos os Grupos</td><td>3</td></tr>
+<tr><td>Capitulação</td><td>benchmark_cdi</td><td>benchmark</td><td>0,5000</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td>10</td></tr>
+<tr><td>Capitulação</td><td>benchmark_ibovespa</td><td>benchmark</td><td>1,1818</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td>11</td></tr>
+<tr><td>Capitulação</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>-0,3214</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td>21</td></tr>
+<tr><td>Capitulação</td><td>controle_mensal</td><td>controle Mensal</td><td>0,5197</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Controles Mensais</td><td>38</td></tr>
+<tr><td>Euforia</td><td>benchmark_cdi</td><td>benchmark</td><td>0,5000</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td>10</td></tr>
+<tr><td>Euforia</td><td>benchmark_ibovespa</td><td>benchmark</td><td>1,1818</td><td>favoravel_moderado_sem_confirmacao_formal</td><td>Benchmarks</td><td>11</td></tr>
+<tr><td>Euforia</td><td>controle_aleatorio</td><td>aleatorio mesma referencia</td><td>-0,7976</td><td>desfavoravel_moderado_sem_confirmacao_formal</td><td>Controles Aleatórios</td><td>21</td></tr>
+<tr><td>Euforia</td><td>controle_mensal</td><td>controle Mensal</td><td>0,4408</td><td>neutro_ou_misto_sem_confirmacao_formal</td><td>Controles Mensais</td><td>38</td></tr>
       </tbody>
     </table>
     <div id="emptyState" class="empty-state" style="display:none;">Nenhum registro encontrado.</div>

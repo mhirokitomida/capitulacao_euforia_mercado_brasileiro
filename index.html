@@ -196,15 +196,15 @@
       </div>
       
 <p>
-    O primeiro bloco de resultado é a comparação de performance. A estratégia com melhor métrica de retorno no consolidado foi capitulacao, com 291,36%.
-    As curvas patrimoniais e indexadas permitem verificar se a liderança foi estável ao longo do tempo ou concentrada em poucos
-    episódios específicos.
+    O primeiro bloco de resultado é a comparação de performance entre as famílias principais. Capitulação (frequência diária): retorno acumulado de <b>286,62%</b>, retorno anualizado de <b>9,77%</b>, Sharpe de <b>0,0331</b>, Sortino de <b>0,0440</b>, Calmar alinhado de <b>0,6218</b>, drawdown máximo de <b>-15,71%</b> e <b>3.599</b> períodos observados;
+    Euforia (frequência diária): retorno acumulado de <b>285,07%</b>, retorno anualizado de <b>9,74%</b>, Sharpe de <b>0,0384</b>, Sortino de <b>0,0510</b>, Calmar alinhado de <b>0,4818</b>, drawdown máximo de <b>-20,22%</b> e <b>3.599</b> períodos observados. As curvas patrimoniais e indexadas permitem verificar se a diferença entre as estratégias foi
+    estável ao longo do tempo ou concentrada em poucos episódios específicos.
 </p>
 
 <p>
-    O segundo bloco é a leitura de risco. A melhor leitura de risco ajustado apareceu em capitulacao, com métrica de eficiência de 0,0474. A leitura de drawdown deve ser consultada no bloco de risco.
-    Essa separação é importante porque uma estratégia pode terminar com retorno superior, mas ainda assim carregar trajetória
-    mais instável, maior drawdown ou pior eficiência ajustada ao risco.
+    O segundo bloco é a leitura de risco. O drawdown máximo foi calculado a partir da série histórica de drawdown de cada
+    estratégia, preservando o sinal negativo da perda máxima. Essa separação é importante porque uma estratégia pode terminar
+    com retorno superior, mas ainda assim carregar trajetória mais instável, maior drawdown ou pior eficiência ajustada ao risco.
 </p>
 
 <p>
@@ -214,9 +214,8 @@
 </p>
 
 <p>
-    O quarto bloco é a comparação direta entre Capitulação e Euforia. A comparação direta entre Capitulação e Euforia foi preservada em tabela e gráficos próprios para leitura no dashboard.
-    A leitura final deve combinar esse bloco com as métricas de risco, os testes estatísticos, a robustez por sensibilidade e
-    a composição das carteiras.
+    O quarto bloco é a comparação direta entre Capitulação e Euforia. A leitura final deve combinar esse bloco com as métricas
+    de risco, os testes estatísticos, a robustez por sensibilidade e a composição das carteiras.
 </p>
 
       <div class="takeaways-grid">
@@ -233,7 +232,7 @@
         <div class="takeaway-index">02</div>
         <div>
             <h3>Performance e risco são analisados separadamente</h3>
-            <p>A estratégia com melhor métrica de retorno no consolidado foi capitulacao, com 291,36%. A melhor leitura de risco ajustado apareceu em capitulacao, com métrica de eficiência de 0,0474.</p>
+            <p>Capitulação (frequência diária): retorno acumulado de 286,62%, retorno anualizado de 9,77%, Sharpe de 0,0331, Sortino de 0,0440, Calmar alinhado de 0,6218, drawdown máximo de -15,71% e 3.599 períodos observados; Euforia (frequência diária): retorno acumulado de 285,07%, retorno anualizado de 9,74%, Sharpe de 0,0384, Sortino de 0,0510, Calmar alinhado de 0,4818, drawdown máximo de -20,22% e 3.599 períodos observados.</p>
         </div>
     </div>
     
@@ -242,7 +241,7 @@
         <div class="takeaway-index">03</div>
         <div>
             <h3>A robustez define a força da evidência</h3>
-            <p>O painel preserva 0 evidências robustas/significativas e 0 evidências sensíveis ou frágeis identificadas nos testes.</p>
+            <p>O painel não identificou evidências robustas/significativas; as classificações disponíveis ficaram distribuídas entre leituras moderadas, neutras/mistas ou desfavoráveis sem confirmação formal.</p>
         </div>
     </div>
     
@@ -376,10 +375,9 @@
 </p>
 
 <p>
-    Foram identificadas <b>0</b> evidências robustas, significativas ou confirmadas nos
-    consolidados disponíveis, além de <b>0</b> evidências sensíveis, frágeis ou não
-    confirmadas. Essa gradação é essencial para separar desempenho econômico promissor de evidência estatística efetivamente
-    estável.
+    Não foram identificadas evidências robustas, significativas ou formalmente confirmadas nos consolidados disponíveis. As classificações de evidência ficaram distribuídas entre <b>favorável moderada sem confirmação formal (25); neutra ou mista sem confirmação formal (9); desfavorável moderada sem confirmação formal (4)</b>,
+    com <b>38</b> registros classificados sem confirmação formal. Essa gradação é essencial para separar
+    desempenho econômico promissor de evidência estatística efetivamente estável.
 </p>
 
 <p>
@@ -397,20 +395,20 @@
     
 
     <div class="info-card">
-        <h4>Evidências sensíveis/frágeis</h4>
-        <p><b>0</b> registros classificados como sensíveis, frágeis ou não confirmados.</p>
+        <h4>Leituras sem confirmação formal</h4>
+        <p><b>38</b> registros classificados sem confirmação formal nas leituras de evidência.</p>
     </div>
     
 
     <div class="info-card">
-        <h4>Melhor retorno consolidado</h4>
-        <p><b>capitulacao</b><br>291,36%</p>
+        <h4>Maior retorno acumulado</h4>
+        <p><b>Capitulação</b><br>286,62%</p>
     </div>
     
 
     <div class="info-card">
-        <h4>Melhor eficiência</h4>
-        <p><b>capitulacao</b><br>0,0474</p>
+        <h4>Maior Sharpe</h4>
+        <p><b>Euforia</b><br>0,0384</p>
     </div>
     
         </div>
@@ -601,23 +599,23 @@
         A base final cobre o período de <b>2011-06-29</b> a <b>2025-12-30</b>, com <b>8</b>
         estratégias ou séries finais, <b>46</b> sinais consolidados, <b>276</b> aportes,
         <b>20.845</b> registros de compras por ticker, <b>239</b> tickers distintos comprados
-        e <b>526.253</b> registros de posições históricas. Em termos financeiros, os aportes somaram aproximadamente
-        <b>R$ 0,00</b> na base consolidada de alocações.
+        e <b>526.253</b> registros de posições históricas. Em termos financeiros, o valor investido agregado nas bases de alocação e compras somou aproximadamente <b>R$ 1.199.805,43</b>.
     </p>
 
     <p>
-        Na leitura das métricas principais, a comparação operacional entre as duas famílias fica mais concreta: Capitulação: retorno acumulado de <b>2,87%</b>, retorno anualizado de <b>9,77%</b>, Sharpe de <b>0,0210</b>, Sortino de <b>0,0269</b>, Calmar de <b>0,6311</b>, drawdown máximo de <b>N/A</b> e <b>175</b> períodos observados;
-        Euforia: retorno acumulado de <b>2,85%</b>, retorno anualizado de <b>9,74%</b>, Sharpe de <b>0,0220</b>, Sortino de <b>0,0283</b>, Calmar de <b>0,8625</b>, drawdown máximo de <b>N/A</b> e <b>175</b> períodos observados. Essa distinção é importante porque retorno acumulado, retorno anualizado, Sharpe, Sortino, Calmar e drawdown
+        Na leitura das métricas principais, a comparação operacional entre as duas famílias fica mais concreta: Capitulação (frequência diária): retorno acumulado de <b>286,62%</b>, retorno anualizado de <b>9,77%</b>, Sharpe de <b>0,0331</b>, Sortino de <b>0,0440</b>, Calmar alinhado de <b>0,6218</b>, drawdown máximo de <b>-15,71%</b> e <b>3.599</b> períodos observados;
+        Euforia (frequência diária): retorno acumulado de <b>285,07%</b>, retorno anualizado de <b>9,74%</b>, Sharpe de <b>0,0384</b>, Sortino de <b>0,0510</b>, Calmar alinhado de <b>0,4818</b>, drawdown máximo de <b>-20,22%</b> e <b>3.599</b> períodos observados. O Calmar exibido nesta conclusão foi alinhado ao retorno anualizado e ao drawdown máximo extraído da série histórica
+        de drawdown usada no próprio texto. Essa distinção é importante porque retorno acumulado, retorno anualizado, Sharpe, Sortino, Calmar e drawdown
         não respondem à mesma pergunta. O retorno mede crescimento patrimonial, enquanto as métricas de eficiência e queda máxima indicam
         se esse crescimento foi obtido com uma trajetória aceitável de risco.
     </p>
 
     <p>
-        Na comparação direta entre as famílias, a linha consolidada principal mostra Capitulação com retorno acumulado de
-        <b>2,81%</b> contra <b>2,79%</b> em Euforia, diferença de <b>1,52%</b> e excesso médio periódico de
-        <b>-0,00%</b>. Em frequência de superação, Capitulação ficou à frente em <b>38,86%</b> dos períodos, enquanto
+        Na comparação direta entre as famílias, usando a frequência <b>Mensal</b> da tabela comparativa, Capitulação aparece com retorno acumulado de
+        <b>280,75%</b> contra <b>279,23%</b> em Euforia, diferença de <b>1,52%</b> e excesso médio periódico de
+        <b>-0,00%</b>. Nessa mesma frequência, Capitulação ficou à frente em <b>38,86%</b> dos períodos, enquanto
         Euforia superou Capitulação em <b>43,43%</b>. Nos testes formais, a leitura inclui p-valor de Wilcoxon de
-        <b>0,5325</b>, p-valor de permutação de <b>0,9755</b> e classificação direcional de <b>favoravel_economica_euforia_sem_significancia</b>.
+        <b>0,5325</b>, p-valor de permutação de <b>0,9755</b> e classificação direcional de <b>favorável econômica euforia sem significância</b>.
     </p>
 
     <p>
@@ -627,7 +625,7 @@
         <b>0,5760</b>. Para Euforia, os respectivos scores foram <b>1,1818</b>, <b>0,5000</b>,
         <b>-0,7976</b>, <b>0,4408</b> e <b>0,3312</b>. A confirmação por bootstrap também aparece no resumo:
         <b>51,15%</b> para Capitulação e <b>51,64%</b> para Euforia, com classificações finais de
-        <b>favoravel_moderado_sem_confirmacao_formal</b> e <b>neutro_ou_misto_sem_confirmacao_formal</b>, respectivamente.
+        <b>favorável moderada sem confirmação formal</b> e <b>neutra ou mista sem confirmação formal</b>, respectivamente.
     </p>
 
     <p>
